@@ -44,12 +44,25 @@ class TillOIDCAuthenticationBackend(OIDCAuthenticationBackend):
 
     def _update_user_common(self, user, claims):
         groups = frozenset(claims.get("groups", []))
-        user.first_name = claims.get('given_name', '')
-        user.last_name = claims.get('family_name', '')
-        user.is_superuser = settings.OIDC_SUPERUSER_GROUPS and all(
-            g in groups for g in settings.OIDC_SUPERUSER_GROUPS)
-        user.is_staff = settings.OIDC_STAFF_GROUPS and all(
-            g in groups for g in settings.OIDC_STAFF_GROUPS)
+
+        # Claims may include "name", "given_name", "family_name" in any
+        # combination.
+        if "name" in claims:
+            names = claims["name"].rsplit(' ', maxsplit=1)
+            if len(names) > 1:
+                user.first_name, user.last_name = names
+            else:
+                user.first_name = ''
+                user.last_name = full_name
+        else:
+            user.first_name = ''
+            user.last_name = ''
+        user.first_name = claims.get('given_name', user.first_name)
+        user.last_name = claims.get('family_name', user.last_name)
+        user.is_superuser = bool(settings.OIDC_SUPERUSER_GROUPS and all(
+            g in groups for g in settings.OIDC_SUPERUSER_GROUPS))
+        user.is_staff = bool(settings.OIDC_STAFF_GROUPS and all(
+            g in groups for g in settings.OIDC_STAFF_GROUPS))
 
     def create_user(self, claims):
         user = super().create_user(claims)
