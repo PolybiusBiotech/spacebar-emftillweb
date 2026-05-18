@@ -53,7 +53,7 @@ class TillOIDCAuthenticationBackend(OIDCAuthenticationBackend):
                 user.first_name, user.last_name = names
             else:
                 user.first_name = ''
-                user.last_name = full_name
+                user.last_name = names[0]
         else:
             user.first_name = ''
             user.last_name = ''
