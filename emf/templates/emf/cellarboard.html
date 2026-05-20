@@ -1,0 +1,34 @@
+{% extends "emf/base.html" %}
+{% load static %}
+{% block title %}The Robot Arms — Cellar status{% endblock %}
+{% block jquery %}
+<script>
+  const websocket_address = "{{websocket_address}}";
+  const sl_location = "{{location}}";
+</script>
+<script src="{% static "emf/js/cellarboard.js" %}" defer></script>
+{% endblock %}
+{% block heading %}
+<h1>{{location}} Cellar status</h1>
+{% endblock %}
+
+{% block content %}
+<table class="large">
+  <colgroup>
+    <col width="15%" />
+    <col width="45%" />
+    <col width="15%" />
+    <col width="25%" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th scope="col">Line</th>
+      <th scope="col">Product</th>
+      <th scope="col">Remaining</th>
+      <th scope="col">Notes</th>
+    </tr>
+  </thead>
+  <tbody id="lineTable">
+  </tbody>
+</table>
+{% endblock %}

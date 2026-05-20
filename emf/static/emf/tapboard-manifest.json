@@ -1,0 +1,14 @@
+{
+    "name": "EMF Bar Tap Display Board",
+    "short_name": "Tapboard",
+    "description": "Display up-to-date information about a single tap",
+    "start_url": "/tapboard/",
+    "icons": [
+	{
+	    "src": "img/tapboard-icon-512x512.png",
+	    "sizes": "512x512"
+	}
+    ],
+    "display": "fullscreen",
+    "background_color": "#afc944"
+}

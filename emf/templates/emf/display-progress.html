@@ -1,0 +1,12 @@
+<div class="section">
+	{% include "emf/charts.html" %}
+
+	<div class="item">
+		<h2>Time passed</h2>
+		<p>We have been open for {{info.time_passed}} out of {{info.length}}.  That's {{info.completed_pct|stringformat:"0.1f"}}%.</p>
+		<div class="bargraph">
+		<div class="bar" style="width:{{info.completed_pct}}%;">
+			<span>{{info.completed_pct|stringformat:"0.1f"}}%</span>
+		</div>
+	</div>
+</div>

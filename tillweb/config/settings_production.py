@@ -28,6 +28,10 @@ if django_config.get("mode", "production") == "production":
     with open(django_config["secret_key_file"]) as f:
         SECRET_KEY = f.read().strip()
 
+    # Read the "line note" password
+    with open(django_config["line_note_password_file"]) as f:
+        LINE_NOTE_PASSWORD = f.read().strip()
+
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,

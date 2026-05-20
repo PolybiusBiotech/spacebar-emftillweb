@@ -22,7 +22,7 @@ def _config_locations():
 def read_config():
     for loc in _config_locations():
         if loc.is_dir():
-            cf = loc / "tillweb.toml"
+            cf = loc / "emftillweb.toml"
             if cf.exists():
                 try:
                     with open(cf, "rb") as f:

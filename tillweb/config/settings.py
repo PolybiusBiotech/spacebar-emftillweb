@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'widget_tweaks',
     'tillweb.utils',
     'quicktill.tillweb',
+    'emf',
 ]
 if oidc_config:
     INSTALLED_APPS.append('mozilla_django_oidc')
@@ -80,6 +81,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'emf.middleware.PagesFallbackMiddleware',
 ]
 if oidc_config:
     MIDDLEWARE.append('mozilla_django_oidc.middleware.SessionRefresh')
@@ -224,8 +226,12 @@ STATICFILES_DIRS = [
 ]
 
 
-# Media files (uploaded by users)
+# Media files
 MEDIA_URL = 'media/'
+
+# Media root in project home in development mode; in production mode
+# this will be overridden in settings_production.py
+MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 
 FRONT_PAGE_MODE = front_page_config.get("mode", "start-button")

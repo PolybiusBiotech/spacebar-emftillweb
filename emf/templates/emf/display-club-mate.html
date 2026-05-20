@@ -1,0 +1,18 @@
+<div class="section">
+	<div class="item">
+		<h3>Available individually or in cases of 20 bottles.</h3>
+	</div>
+
+	{% for st, remaining, total, remain_pct in mate %}
+		<div class="item">
+			<h2 style="float: right">£{{st.saleprice}}</h2>
+			<h2>{{st.manufacturer}} {{st.name}}</h2>
+
+			<p>{{remaining|stringformat:"1.0f"}} bottles remaining</p>
+
+			<div class="bargraph" style="margin-bottom: 2.5em;">
+				<div class="bar remaining" style="width:{{remain_pct}}%;"><span>{{remain_pct|stringformat:"0.1f"}}%</span></div>
+			</div>
+		</div>
+	{% endfor %}
+</div>

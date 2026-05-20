@@ -1,0 +1,142 @@
+@charset "UTF-8";
+
+@import url('../fonts/fonts.css');
+@import url( 'style.css' );
+
+$background: #afc944;
+$foreground: #213018;
+$highlight: #f55089;
+
+body {
+    background: $foreground url('/static/emf/img/bg.png');
+    background-size: 10%;
+    box-sizing: border-box;
+    padding: 1em;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    overflow: hidden;
+    color: $foreground;
+    font-size: 24pt;
+    font-family: Raleway, sans-serif;
+    background-color: $background;
+    padding: 1em;
+    box-sizing: border-box;
+    border-radius: .5em;
+
+    header {
+	display: flex;
+	flex-direction: row;
+	flex: 2;
+
+	width: 100%;
+	text-align: center;
+	align-items: center;
+	margin-bottom: 0;
+
+	#logo img {
+	    width: 12em;
+	}
+
+	#title {
+	    flex: 1;
+	    margin-top: auto;
+	    margin-bottom: auto;
+	}
+
+	#clock {
+	    width: 2.5em;
+	    text-align: right;
+	    font-size: 48pt;
+	    margin-top: auto;
+	    margin-bottom: auto;
+	}
+    }
+
+    #content {
+	display: flex;
+	flex-direction: column;
+	flex-grow: 20;
+	flex-basis: auto;
+
+	h2 {
+	    margin: 0;
+	}
+    }
+
+    #page {
+	position: absolute;
+	left: 30px;
+	right: 30px;
+	bottom: 30px;
+	flex: 1;
+	text-align: center;
+
+	display: flex;
+	flex-direction: row;
+
+	span {
+	    flex: 1;
+	    background-color: $foreground;
+	    margin-left: .5em;
+	    height: .25em;
+
+	    transition: background-color 2s;
+
+	    &:first-child {
+		margin-left: 0;
+	    }
+
+	    &.current {
+		background-color: $highlight;
+	    }
+	}
+    }
+}
+
+.section {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: 100%;
+
+    .item {
+	p {
+	    padding: 0;
+	    margin: 0 0 .5em 0;
+	}
+    }
+}
+
+.larger {
+    font-size: 32pt;
+
+    li {
+	margin-bottom: 1em;
+    }
+}
+
+/* This is intended to be used when a table has too many rows to fit on the display */
+.smaller {
+    font-size: 15pt;
+}
+
+#title, #content, #page {
+    transition: opacity 1s ease-in-out;
+}
+
+@media screen and ( max-width: 1280px ) {
+    #logo {
+	display: none;
+    }
+    #clock {
+	display: none;
+    }
+}

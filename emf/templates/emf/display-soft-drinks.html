@@ -1,0 +1,36 @@
+<h3>Chilled water is available on tap at the bar. Feel free to fill your own containers.</h3>
+
+<table>
+  <colgroup>
+    <col width="50%">
+    <col width="25%">
+    <col width="25%">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Price</th>
+      <th>Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for st, remain_pct in soft %}
+    <tr>
+      <td>{{ st.manufacturer }} {{ st.name }}</td>
+      <td>£{{ st.saleprice }}/{{ st.unit.item_name }}</td>
+      <td class="stock">
+        {% if remain_pct <= 7.5 %}
+        <span class="orb lastfew" title="Last few"></span>
+        <span class="text">Last few</span>
+        {% elif remain_pct <= 20.0 %}
+        <span class="orb low" title="Low"></span>
+        <span class="text">Low</span>
+        {% else %}
+        <span class="orb plenty" title="Plenty"></span>
+        <span class="text">Plenty</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

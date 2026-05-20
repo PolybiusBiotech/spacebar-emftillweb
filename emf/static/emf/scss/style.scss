@@ -1,0 +1,116 @@
+$background: #afc944;
+$foreground: #213018;
+
+$highlight: #f55089;
+
+table {
+	line-height: 1.5;
+	width: 100%;
+	border-spacing: 0;
+
+	&.large {
+		font-size: 21pt;
+	}	
+
+	thead {
+		th {
+			text-align: left;
+		}
+		
+		&.sub th {
+			font-weight: 600;
+			padding-top: 12pt;
+			border-bottom: 1px solid $foreground;
+		}
+	} 
+
+	tbody {
+		.stock {
+			.orb {
+				background-color: black;
+				width: 0.6em;
+				height: 0.6em;
+				display: inline-block;
+				margin-right: 0.2em;
+				margin-bottom: 0.1em;
+				border-radius: 1em;
+
+				&.lastfew {
+					background-color: red;
+				}
+
+				&.plenty {
+					background-color: green;
+				}
+
+				&.low {
+					background-color: orange;
+				}
+			}
+		}
+
+		tr:nth-child(odd) {
+			background-color: rgba(0, 0, 0, 0.05);
+		}
+	}
+}
+
+.bargraph {
+    width: 100%;
+    background-color: rgba(0, 0, 0, 0.25);
+    color: #151735;
+    height: 2em;
+    border-radius: 10em;
+    overflow: hidden;
+    position: relative;
+}
+
+.screen {
+	.bargraph {
+		height: 3em;
+	}
+	
+	.bar span {
+		font-size: 1.5em;
+	}
+}
+
+
+.bar {
+    background: $highlight;
+    overflow: hidden;
+    border-radius: 10em;
+    height: inherit;
+    text-align: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+
+	color: white;
+	
+	.remaining {
+		background: $highlight;
+	}
+	
+	span {
+		font-size: 1em;
+		line-height: 2;
+		overflow: hidden;
+	}
+}
+
+
+.marker {
+    background: #123f8b;
+    height: inherit;
+    text-align: center;
+    font-size: 1em;
+    border-right: 0.25em solid white;
+    position: absolute;
+    top: 0;
+    left: 0;
+	
+	.remaining {
+		background: #123f8b;
+	}
+}

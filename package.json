@@ -3,7 +3,9 @@
     "description": "tillweb — web interface for quicktill",
     "scripts": {
         "dev": "webpack --mode development --watch",
-        "build": "webpack --mode production"
+        "build": "webpack --mode production",
+	"emfsass": "sass emf/static/emf/scss/:emf/static/emf/css/",
+	"emfsass-watch": "sass emf/static/emf/scss/:emf/static/emf/css/ --watch"
     },
     "devDependencies": {
         "@popperjs/core": "^2.11.8",

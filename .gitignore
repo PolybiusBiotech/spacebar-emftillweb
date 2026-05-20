@@ -3,3 +3,5 @@ __pycache__
 dist/
 /node_modules/
 /tillweb/static/bundles/
+/media/
+/emf/static/emf/css/

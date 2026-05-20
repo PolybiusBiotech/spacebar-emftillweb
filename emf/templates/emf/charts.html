@@ -1,0 +1,15 @@
+<div class="item">
+	<h2>Predicted Sales</h2>
+	<p>Based on the time we've been open, this is where we expect to be.</p>
+	<div class="bargraph">
+		<div class="bar" style="width:{{info.expected_consumption_pct}}%;"><span>{{info.expected_consumption_pct|stringformat:"0.1f"}}%</span></div>
+	</div>
+</div>
+
+<div class="item">
+	<h2>Actual sales</h2>
+	<p>We've actually consumed {{alcohol_used_pct|stringformat:"0.1f"}}% of the alcohol.</p>
+	<div class="bargraph">
+		<div class="bar" style="width:{{alcohol_used_pct}}%;"><span>{{alcohol_used_pct|stringformat:"0.1f"}}%</span></div>
+	</div>
+</div>

@@ -1,0 +1,61 @@
+{% extends "emf/base.html" %}
+{% load static %}
+{% block title %}The Robot Arms — Price List{% endblock %}
+
+{% block heading %}
+<h1>The Robot Arms — Price List</h1>
+{% endblock %}
+
+{% block content %}
+<p>Note: Not all draught beers and ciders are on sale at the same
+time. See <a href="{% url "frontpage" %}">the front page</a> for the
+current selection.</p>
+
+<table>
+  <colgroup>
+    <col width="50%" />
+    <col width="15%" />
+    <col width="20%" />
+    <col width="15%" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>ABV</th>
+      <th>Price</th>
+      <th>Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p, remain_pct in products %}
+    {% ifchanged p.department.description %}
+  </tbody>
+  <thead class="sub">
+    <tr>
+      <th colspan="4">{{p.department.description}}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% endifchanged %}
+    <tr>
+      <td>{{ p.manufacturer }} {{ p.name }}</td>
+      <td>{% if p.abv != None %}{{ p.abv }}%{% endif %}</td>
+      <td>£{{ p.saleprice }}/{{ p.unit.item_name }}</td>
+      <td class="stock">
+        {% if remain_pct < 5.0 %}
+        <span class="orb lastfew" title="Last few"></span>
+        <span class="text">Last few</span>
+        {% elif remain_pct < 15.0 %}
+        <span class="orb low" title="Low"></span>
+        <span class="text">Low</span>
+        {% else %}
+        <span class="orb plenty" title="Plenty"></span>
+        <span class="text">Plenty</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

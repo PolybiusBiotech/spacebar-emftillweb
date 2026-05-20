@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% load tillweb_utils %}
+
+{% block title %}Till user profile{% endblock %}
+
+{% block content %}
+<main class="container">
+  <div class="row">
+    <div class="col">
+      {% if tilluser %}
+      {% if not tilluser.enabled %}
+      <div class="alert alert-error">
+	Your till user "{{tilluser.fullname}}" is disabled, so your
+	access to the till web interface is read-only.
+      </div>
+      {% endif %}
+      {% else %}
+      <div class="alert alert-warning">
+	<p>Your web user account is not connected to a till user account,
+	  so your access to the till web interface is read-only.</p>
+	<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tillUserSetup">Create or connect to a till user</button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <ul class="nav flex-column">
+	<li class="nav-item">
+	  <a class="nav-link" href="{% url "frontpage" %}">Front page</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="{% url "tillweb-pubroot" %}">Till web interface</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="{% url "cellarboard" location="Bar"%}">Main bar cellar status</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="{% url "cellarboard" location="Null Sector"%}">Null Sector cellar status</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#tillUserSetup">Change till user</a>
+	</li>
+	<li class="nav-item">
+	  <a class="nav-link" href="{% url "emf-database-dump" %}">Download till database dump (only before start of event)</a>
+	</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+{% modal "tillUserSetup" title="Till user setup" %}
+<form action="" method="post">{% csrf_token %}
+  <div class="modal-body">
+    <label for="tillUserChoice">Which till user are you?</label>
+    <select class="form-select mb-2" name="tilluser" id="tillUserChoice">
+      {% if not tilluser %}
+      <option value="">Create a new user "{{request.user.get_full_name}}"</option>
+      {% endif %}
+      {% for u in available_users %}
+      <option value="{{u.id}}">{{u.fullname}}</option>
+      {% endfor %}
+    </select>
+    <p>The selected user will be given "manager" permissions on
+      the till, and linked to this web account.</p>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      Cancel
+    </button>
+    <button type="submit" class="btn btn-primary" name="submit_tillusersetup">
+      Save changes
+    </button>
+  </div>
+</form>
+{% endmodal %}
+
+{% endblock %}

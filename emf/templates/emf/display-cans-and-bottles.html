@@ -1,0 +1,38 @@
+<table{% if num_types > 16 %} class="smaller"{% endif %}>
+  <colgroup>
+    <col width="50%" />
+    <col width="16.66%" />
+    <col width="16.66%" />
+    <col width="16.66%" />
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>ABV</th>
+      <th>Price</th>
+      <th>Stock status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in types %}
+    <tr>
+      <td>{{ t.manufacturer }} {{ t.name }}</td>
+      <td>{{ t.abv }}%</td>
+      <td>£{{ t.saleprice }}/{{ t.unit.item_name }}</td>
+
+      <td class="stock">
+	{% if t.remaining <= 5.0 %}
+	<span class="orb lastfew" title="Last few"></span>
+	<span class="text">Last few</span>
+	{% elif t.remaining <= 10.0 %}
+	<span class="orb low" title="Low"></span>
+	<span class="text">Low</span>
+	{% else %}
+	<span class="orb plenty" title="Plenty"></span>
+	<span class="text">Plenty</span>
+	{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

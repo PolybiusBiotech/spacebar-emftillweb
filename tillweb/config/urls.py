@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from tillweb.config import views
 import quicktill.tillweb.urls
+import emf.urls
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -34,5 +35,6 @@ urlpatterns = [
     path('oidc/', include('mozilla_django_oidc.urls')),
     path('detail/', include(quicktill.tillweb.urls.tillurls),
          {"pubname": "detail"}),
-    path('', views.index, name="frontpage"),
+    # path('', views.index, name="frontpage"),
+    path('', include(emf.urls.urls)),
 ]

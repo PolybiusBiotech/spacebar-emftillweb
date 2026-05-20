@@ -1,0 +1,44 @@
+@charset "UTF-8";
+@import url( '../fonts/fonts.css' );
+
+$background: #afc944;
+$foreground: #213018;
+
+body {
+    min-height: 100%;
+    margin: 0px;
+    background-color: $background;
+    color: $foreground;
+    font-size: 36pt;
+    font-family: Raleway, sans-serif;
+}
+
+.barboard-grid {
+    display: grid;
+    height: 100vh;
+    grid-gap: 50px;
+    grid-template-columns: repeat(3, 30%);
+    grid-template-rows: repeat(2, 45%);
+    justify-content: center;
+    align-content: center;
+}
+
+.barboard-grid div {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    text-align: center;
+}
+
+.logo {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    flex-grow: 1;
+    img {
+	object-fit: contain;
+	max-height: 100%;
+	max-width: 100%;
+    }
+}

@@ -1,0 +1,91 @@
+<h2>Wines</h2>
+
+<p class="smaller">Available in 125ml, 175ml and 250ml measures as
+well as 750ml bottles.  Sorry: we're using half pint glasses because
+we don't have any wine glasses!</p>
+
+<table>
+  <colgroup>
+    <col width="40%">
+    <col width="10%">
+    <col width="10%">
+    <col width="10%">
+    <col width="10%">
+    <col width="10%">
+    <col width="10%">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>ABV</th>
+      <th>125ml</th>
+      <th>175ml</th>
+      <th>250ml</th>
+      <th>Bottle</th>
+      <th>Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for w, small, medium, large in wines %}
+    <tr>
+      <td>{{ w.manufacturer }} {{ w.name }}</td>
+      <td>{{ w.abv }}%</td>
+      <td>£{{ small|stringformat:"0.2f" }}</td>
+      <td>£{{ medium|stringformat:"0.2f" }}</td>
+      <td>£{{ large|stringformat:"0.2f" }}</td>
+      <td>£{{ w.saleprice }}</td>
+
+      <td class="stock">
+        {% if w.remaining < 3000 %}
+        <span class="orb lastfew" title="Last few"></span>
+        <span class="text">Last few</span>
+        {% else %}
+        <span class="orb plenty" title="Plenty"></span>
+        <span class="text">Plenty</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2 style="margin-top: 1.5em;">Spirits</h2>
+
+<table>
+  <colgroup>
+    <col width="40%">
+    <col width="10%">
+    <col width="40%">
+    <col width="20%">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>ABV</th>
+      <th>Price</th>
+      <th>Stock</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in spirits %}
+    <tr>
+      <td>{{ t.manufacturer }} {{ t.name }}</td>
+      <td>{{ t.abv }}%</td>
+      <td>£{{ t.saleprice }}/{{ t.unit.item_name }}</td>
+
+      <td class="stock">
+        {% if t.remaining <= 5.0 %}
+        <span class="orb lastfew" title="Last few"></span>
+        <span class="text">Last few</span>
+        {% elif t.remaining <= 10.0 %}
+        <span class="orb low" title="Low"></span>
+        <span class="text">Low</span>
+        {% else %}
+        <span class="orb plenty" title="Plenty"></span>
+        <span class="text">Plenty</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

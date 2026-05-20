@@ -1,0 +1,128 @@
+{% extends "emf/base.html" %}
+{% load static %}
+{% block title %}The Robot Arms{% endblock %}
+
+{% block heading %}
+<img class="logo" src="/static/emf/img/logo.svg" />
+<h1>The Robot Arms</h1>
+{% if info.open %}
+<div class="status open">
+  <h2>Open</h2>
+  <p>Closing at {{ info.closes_at|date:"H:i" }}</p>
+</h2>
+{% else %}
+<div class="status closed">
+  <h2>Closed</h2>
+  {% if info.next_open %}
+  <p>Opening {{ info.next_open|date:"l H:i" }}</p>
+  {% else %}
+  <p>See you next time!</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{{content}}
+
+<div class="split">
+  <div>
+    <h1>What's on the bar right now?</h1>
+    {% include 'emf/ales.html' %}
+  </div>
+
+  <div>
+    <h1>What else does the bar sell?</h1>
+
+    <p><a href="{% url "pricelist" %}">See the complete list of items for sale.</a></p>
+    <p>Please note that we don't have space on the bar to sell all the
+      draught beers and ciders at once: we have four handpumps for cask
+      ales, and six taps for keg beers and ciders.</p>
+  </div>
+</div>
+
+<div class="split">
+  <div>
+    <h1>When is the bar open?</h1>
+    {% if sessions %}
+	<table>
+		<colgroup>
+			<col width="20%">
+			<col width="20%">
+			<col width="20%">
+			{% if session_comments_exist %}
+			<col width="40%">
+			{% endif %}
+		</colgroup>
+		<thead class="sub">
+			<tr>
+				<th>Day</th>
+				<th>Open</th>
+				<th>Close</th>
+				{% if session_comments_exist %}
+				<th></th>
+				{% endif %}
+			</tr>
+		</thead>
+		<tbody>
+			{% for s in sessions %}
+			<tr>
+				<td>{{s.opening_time|date:"l"}}</td>
+				<td>{{s.opening_time|date:"H:i"}}</td>
+				<td>{{s.closing_time|date:"H:i"}}</td>
+				{% if session_comments_exist %}
+				<td>{{s.comment}}</td>
+				{% endif %}
+			</tr></li>
+			{% endfor %}
+		</tbody>
+	</table>
+    {% else %}
+    <p>The event is over!</p>
+    {% endif %}
+  </div>
+
+  <div>
+    <h1>Event progress</h1>
+    <div>
+      {% include "emf/charts.html" %}
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <div>
+    <h1>What's powering this?</h1>
+
+    <p>The tills are run using free software.</p>
+    <ul>
+      <li><a href="https://github.com/sde1000/quicktill">The till software</a></li>
+      <li><a href="https://github.com/emfcamp/quicktill-tillweb">This web service</a></li>
+      <li><a href="https://github.com/sde1000/till-boot">The display boards</a> boot over the network and fetch <a href="{% url "display" %}">https://bar.emfcamp.org/display/</a></li>
+      <li>The tap label tablets are running <a href="{% url "tapboard" %}">this PWA</a></li>
+    </ul>
+
+    <p>Pull requests welcome!</p>
+
+    <p>A JSON API is available, accessible over HTTP GET or websocket;
+    see the documentation
+    at <a href="http://developer.emfcamp.org/">developer.emfcamp.org</a>.
+  </div>
+
+  <div class="align-bottom">
+    <h3>Links requiring login</h3>
+    <ul>
+      <li>
+	<a href="{% url "till-profile" %}">User profile page</a>
+      </li>
+      <li>
+	<a href="{% url "tillweb-pubroot" pubname="detail" %}">Till web interface</a>
+      </li>
+      <li>
+	<a href="{% url "admin:index" %}">Admin</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+{% endblock %}
