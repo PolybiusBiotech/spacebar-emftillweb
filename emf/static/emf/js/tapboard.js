@@ -263,6 +263,40 @@ if ("wakeLock" in navigator) {
     })();
 }
 
+/* Hidden dev command: tap the setup screen header 5 times quickly to
+ * unregister the service worker, clear all caches, and hard-reload.
+ * Useful during development when the SW has cached stale assets. */
+let _devTapCount = 0;
+let _devTapTimer = null;
+
+function _dev_tap() {
+    _devTapCount++;
+    if (_devTapTimer) {
+        clearTimeout(_devTapTimer);
+    }
+    if (_devTapCount >= 5) {
+        _devTapCount = 0;
+        _dev_clear_cache();
+    } else {
+        _devTapTimer = setTimeout(() => { _devTapCount = 0; }, 2000);
+    }
+}
+
+async function _dev_clear_cache() {
+    setupStatus.innerText = "Clearing cache and reloading…";
+    if ("serviceWorker" in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+            await reg.unregister();
+        }
+    }
+    if ("caches" in window) {
+        const names = await caches.keys();
+        await Promise.all(names.map((n) => caches.delete(n)));
+    }
+    location.reload(true);
+}
+
 /* Initialisation */
 
 function init() {
