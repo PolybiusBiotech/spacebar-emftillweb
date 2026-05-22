@@ -1,6 +1,6 @@
 {% extends "emf/base.html" %}
 {% load static %}
-{% block title %}The Robot Arms — Cellar status{% endblock %}
+{% block title %}EMF Camp Bars - Cellar status{% endblock %}
 {% block jquery %}
 <script>
   const websocket_address = "{{websocket_address}}";
@@ -9,7 +9,7 @@
 <script src="{% static "emf/js/cellarboard.js" %}" defer></script>
 {% endblock %}
 {% block heading %}
-<h1>{{location}} Cellar status</h1>
+<h1>{{location}} Cellar Status</h1>
 {% endblock %}
 
 {% block content %}
