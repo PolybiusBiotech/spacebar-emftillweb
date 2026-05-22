@@ -12,12 +12,15 @@ body {
 	background-color: $background;
 	color: $foreground;
 	font-size: 12pt;
-	font-family: Raleway, sans-serif;
-	margin: 2em;
+	font-family: Open Sans, sans-serif;
 }
 
 a:link, a:visited, a:hover {
 	color: $foreground;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-family: Raleway, sans-serif;
 }
 
 header {
