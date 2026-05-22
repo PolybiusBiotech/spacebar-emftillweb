@@ -1,7 +1,16 @@
 $background: #afc944;
 $foreground: #213018;
+$highlight: #2AE28C;
+$highlight2: #213018;
 
-$highlight: #f55089;
+$success: #2AE28C;
+$warning: #F77F02;
+$danger: #F5515E;
+
+@keyframes pulse {
+	0%, 100% { background-color: transparent; }
+	30%, 70% { background-color: $danger; }
+}
 
 table {
 	line-height: 1.5;
@@ -36,15 +45,15 @@ table {
 				border-radius: 1em;
 
 				&.lastfew {
-					background-color: red;
+					animation: pulse 1s ease-in-out infinite;
 				}
 
 				&.plenty {
-					background-color: green;
+					background-color: $success;
 				}
 
 				&.low {
-					background-color: orange;
+					background-color: $warning;
 				}
 			}
 		}
@@ -58,7 +67,7 @@ table {
 .bargraph {
     width: 100%;
     background-color: rgba(0, 0, 0, 0.25);
-    color: #151735;
+    color: #000000;
     height: 2em;
     border-radius: 10em;
     overflow: hidden;
@@ -85,8 +94,7 @@ table {
     position: absolute;
     top: 0;
     left: 0;
-
-	color: white;
+	color: $highlight2;
 	
 	.remaining {
 		background: $highlight;

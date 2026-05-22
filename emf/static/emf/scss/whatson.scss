@@ -2,12 +2,14 @@
 @import url( '../fonts/fonts.css' );
 @import url( 'style.css' );
 
-$background: #afc944;
-$foreground: #213018;
-$highlight: #f55089;
-$highlight2: #F9E200;
+$background: #005D96;
+$foreground: #ffffff;
+$highlight: #F5515E;
+$highlight2: #2AE28C;
 
 body {
+	max-width: 72em;
+	margin: 2em auto;
 	min-height: 100%;
 	background-color: $background;
 	color: $foreground;
@@ -29,7 +31,7 @@ header {
 	div {
 		display: flex;
 		width: 100%;
-		align-items: flex-start;
+		align-items: center;
 
 		.logo {
 			max-width: 20em;
@@ -60,12 +62,12 @@ header {
 
 			&.closed h2 {
 				background-color: $background;
-				columns: $foreground;
+				color: $foreground;
 			}
 
 			&.open h2 {
 				background-color: $foreground;
-				color: white;
+				color: $background;
 			}
 
 			p {
@@ -105,6 +107,10 @@ header {
 }
 
 @media screen and ( max-width: 1024px ) {
+	body {
+		margin: 2em;
+	}
+
 	header {
 		div {
 			.logo {
@@ -138,7 +144,6 @@ header {
 		div {
 			flex-direction: column;
 			align-items: center;
-			// margin-bottom: 1em;
 
 			.logo {
 				max-width: 15em;
