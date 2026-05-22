@@ -4,8 +4,8 @@
 @charset "UTF-8";
 @import url('../fonts/fonts.css');
 
-$background: #213018;
-$foreground: #afc944;
+$background: #000730;
+$foreground: white;
 
 /* Reset based on
    http://meyerweb.com/eric/tools/css/reset/ 
@@ -63,7 +63,7 @@ body {
     background: $background;
     color: $foreground;
     font-size: 24pt;
-    font-family: Raleway, sans-serif;
+    font-family: Open Sans, sans-serif;
 }
 
 .d-none {
@@ -122,6 +122,7 @@ h1 {
 }
 
 h1, h2, h3, h4, h5, h6 {
+    font-family: Raleway, sans-serif;
     margin-top: 0;
     margin-bottom: 0.2em;
 }
