@@ -251,6 +251,12 @@ def frontpage(request):
 
 
 def pricelist(request):
+    try:
+        page = emf.models.Page.objects.get(path='pricelist')
+        content = page.as_html()
+    except emf.models.Page.DoesNotExist:
+        content = ''
+
     with tillsession() as s:
         products = s.query(StockType,
                            StockType.remaining / StockType.total * 100.0)\
@@ -264,6 +270,7 @@ def pricelist(request):
         return render(
             request, "emf/pricelist.html",
             context={
+                "content": content,
                 "products": products,
             })
 

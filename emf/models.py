@@ -41,7 +41,11 @@ class Session(models.Model):
 
 
 class Page(models.Model):
-    """A page of content for the website
+    """Content for the website
+
+    Some predefined pages may check for additional content here, using
+    the name of the page as the path. The title is ignored in this
+    case.
     """
     path = models.CharField(
         max_length=80, unique=True, blank=True,
