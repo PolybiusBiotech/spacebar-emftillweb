@@ -1,11 +1,11 @@
 @charset "UTF-8";
 
-@import url('../fonts/fonts.css');
 @import url( 'style.css' );
 
 $background: #000730;
 $foreground: #ffffff;
 $highlight: #2AE28C;
+@use 'fonts' as *;
 
 body {
     // background: $foreground url('/static/emf/img/bg.png');
@@ -25,14 +25,14 @@ body {
     overflow: hidden;
     color: $foreground;
     font-size: 22pt;
-    font-family: Open Sans, sans-serif;
+    font-family: $bodyFont;
     background-color: $background;
     padding: 1em;
     box-sizing: border-box;
     // border-radius: .5em;
 
     h1, h2, h3, h4, h5, h6 {
-        font-family: Raleway, sans-serif;
+        font-family: $headlineFont;
     }
 
     header {
