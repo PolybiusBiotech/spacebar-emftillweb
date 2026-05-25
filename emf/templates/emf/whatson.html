@@ -23,7 +23,10 @@
 {% endblock %}
 
 {% block content %}
-{{content}}
+
+{% if content %}
+<div class="alert-block">{{content}}</div>
+{% endif %}
 
 <div class="split">
   <div>
