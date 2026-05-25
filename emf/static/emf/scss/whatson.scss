@@ -137,6 +137,69 @@ header {
     }
 }
 
+.products {
+    display: grid;
+    grid-template-columns: 30% 10% 15% 30% 15%;
+
+    &.woloc {
+        grid-template-columns: 40% 15% 20% 25%;
+
+        .location, .locations {
+            display: none;
+        }
+    }
+
+    h2 {
+        font-size: 1.25em;
+        border-bottom: 1px solid white;
+        margin: 1em 0 0 0;
+        grid-column: 1 / -1;
+    }
+
+    .product {
+        display: contents;
+
+        > * {
+            padding: 0.5em 0;
+        }
+
+        &:nth-child(even) > * {
+            background-color: rgba(255, 255, 255, 0.025);
+        }
+
+        &.head {
+            background-color: transparent;
+            font-weight: bold;
+        }
+
+        .locations {
+            .location {
+                background-color: $highlightBG;
+                color: $highlightFG;
+                padding: 0 0.5em;
+                border-radius: 1em;
+                margin-right: 0.2em;
+                font-size: 0.9em;
+                white-space: nowrap;
+
+                &::before {
+                    padding-right: 0.2em;
+                }
+
+                &.cybar {
+                    background-color: $danger;
+                    &::before { content: "🤖"; }
+                }
+
+                &.robotarms {
+                    background-color: $warning;
+                    &::before { content: "🍺"; }
+                }
+            }
+        }
+    }
+}
+
 @media screen and ( max-width: 1024px ) {
     body {
         margin: 2em;
@@ -168,6 +231,66 @@ header {
             }
         }
     }
+
+    .products {
+        display: block;
+
+        h2 {
+            font-size: 1.5em;
+            border-bottom: none;
+            margin: 1em 0 0 0;
+            grid-column: 1 / -1;
+        }
+
+        .product {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 1em;
+            margin: 1em 0;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.025);
+
+            > * {
+                padding: 0;
+            }
+
+            &:nth-child(even) > * {
+                background-color: transparent;
+            }
+
+            &.head {
+                display: none;
+            }
+
+            .name {
+                flex: 1;
+                order: 1;
+                font-weight: bold;
+                font-size: 1.125em;
+            }
+            .stock {
+                order: 2;
+                margin-left: auto;
+            }
+
+            .abv, .price, .locations {
+                order: 3;
+                width: 100%;
+                line-height: 1.75em;
+            }
+
+            .locations::before {
+                content: "Available at: ";
+            }
+
+            .abv:not(:empty) {
+                &::before {
+                    content: "ABV: ";
+                }
+            }
+        }
+    }
+
 }
 
 @media screen and ( max-width: 768px ) {

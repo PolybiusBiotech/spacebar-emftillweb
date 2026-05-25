@@ -15,53 +15,47 @@
   time. See <a href="{% url "frontpage" %}">the front page</a> for the
   current selection.</div>
 
-<table>
-  <colgroup>
-    <col width="50%" />
-    <col width="15%" />
-    <col width="20%" />
-    <col width="15%" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th scope="col">Name</th>
-      <th scope="col">ABV</th>
-      <th scope="col">Price</th>
-      <th scope="col" class="stock">Stock</th>
-    </tr>
-  </thead>
-  {% comment %}
-  <tbody>
-    {% endcomment %}
-    {% for p, remain_pct in products %}
+
+<!-- sde1000: remove the woloc class when you add the locations column -->
+<div class="products woloc">
+  <div class="product head">
+    <div class="name">Name</div>
+    <div class="abv">ABV</div>
+    <div class="price">Price</div>
+    <div class="locations">Locations</div>
+    <div class="stock">Stock</div>
+  </div>
+
+  {% for p, remain_pct in products %}
     {% ifchanged p.department.description %}
-    {% if not forloop.first %}
-  </tbody>
-  {% endif %}
-  <tbody class="sub">
-    <tr>
-      <th scope="col" colspan="4">{{p.department.description}}</th>
-    </tr>
+      <h2>{{p.department.description}}</h2>
     {% endifchanged %}
-    <tr>
-      <td>{{ p.manufacturer }} {{ p.name }}</td>
-      <td>{% if p.abv != None %}{{ p.abv }}%{% endif %}</td>
-      <td>£{{ p.saleprice }}/{{ p.unit.item_name }}</td>
-      <td class="stock">
+    <div class="product">
+      <div class="name">{{ p.manufacturer }} {{ p.name }}</div>
+      <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
+      <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
+
+      <!-- For sde1000's future features -->
+      <div class="locations">
+        <!-- <span class="location cybar">Cybar</span> -->
+        <!-- <span class="location robotarms">Robot Arms</span> -->
+      </div>
+
+      <div class="stock">
         {% if remain_pct < 5.0 %}
-        <span class="orb lastfew" title="Last few"></span>
-        <span class="text">Last few</span>
+          <span class="orb lastfew" title="Last few"></span>
+          <span class="text">Last few</span>
         {% elif remain_pct < 15.0 %}
-        <span class="orb low" title="Low"></span>
-        <span class="text">Low</span>
+          <span class="orb low" title="Low"></span>
+          <span class="text">Low</span>
         {% else %}
-        <span class="orb plenty" title="Plenty"></span>
-        <span class="text">Plenty</span>
+          <span class="orb plenty" title="Plenty"></span>
+          <span class="text">Plenty</span>
         {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+      </div>
+
+    </div>
+  {% endfor %}
+</div>
 
 {% endblock %}
