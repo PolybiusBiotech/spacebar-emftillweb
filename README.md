@@ -28,6 +28,7 @@ suitable for development:
 ```
 [django]
 time_zone = "Europe/London"
+mode = "devel"
 
 [till]
 database_name = "emfcamp"
