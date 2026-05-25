@@ -101,11 +101,26 @@ header {
 }
 
 .alert-block {
-    background-color: $highlightBG;
-    color: $highlightFG;
+    color: $highlightAlt;
+    border: .15em solid $highlightAlt;
     padding: 1em;
     margin-bottom: 1em;
     border-radius: .25em;
+
+    &.success {
+        border-color: $success;
+        color: $success;
+    }
+
+    &.warning {
+        border-color: $warning;
+        color: $warning;
+    }
+
+    &.danger {
+        border-color: $danger;
+        color: $danger;
+    }
 
     p:first-child {
         margin-top: 0;
@@ -116,7 +131,7 @@ header {
     }
 
     a:link, a:visited, a:hover {
-        color: $highlightFG;
+        color: inherit;
         text-decoration: underline;
         font-weight: bold;
     }
