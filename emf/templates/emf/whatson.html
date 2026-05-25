@@ -3,23 +3,23 @@
 {% block title %}EMF Camp Bars{% endblock %}
 
 {% block heading %}
-<img class="logo" src="/static/emf/img/logo.svg" />
-<h1>Bar Status</h1>
-{% if info.open %}
-<div class="status open">
-  <h2>Open</h2>
-  <p>Closing at {{ info.closes_at|date:"H:i" }}</p>
-</h2>
-{% else %}
-<div class="status closed">
-  <h2>Closed</h2>
-  {% if info.next_open %}
-  <p>Opening {{ info.next_open|date:"l H:i" }}</p>
+<a class="logo" href="/"><img src="/static/emf/img/logo.svg"></a>
+  <h1>Bar Status</h1>
+  {% if info.open %}
+    <div class="status open">
+      <h2>Open</h2>
+      <p>Closing at {{ info.closes_at|date:"H:i" }}</p>
+    </div>
   {% else %}
-  <p>See you next time!</p>
+    <div class="status closed">
+      <h2>Closed</h2>
+      {% if info.next_open %}
+        <p>Opening {{ info.next_open|date:"l H:i" }}</p>
+      {% else %}
+        <p>See you next time!</p>
+      {% endif %}
+    </div>
   {% endif %}
-</div>
-{% endif %}
 {% endblock %}
 
 {% block content %}
