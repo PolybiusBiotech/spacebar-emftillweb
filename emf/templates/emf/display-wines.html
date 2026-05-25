@@ -1,5 +1,5 @@
 <div class="section">
-{% if wines %}
+  {% if wines %}
   <div class="item">
     <h2>Wine bottles</h2>
 
@@ -40,20 +40,20 @@
 
           <td class="stock">
             {% if w.remaining < 3000 %}
-                                <span class="orb lastfew" title="Last few"></span>
-                                <span class="text">Last few</span>
-                                {% else %}
-                                <span class="orb plenty" title="Plenty"></span>
-                                <span class="text">Plenty</span>
-                                {% endif %}
+            <span class="orb lastfew" title="Last few"></span>
+            <span class="text">Last few</span>
+            {% else %}
+            <span class="orb plenty" title="Plenty"></span>
+            <span class="text">Plenty</span>
+            {% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-{% endif %}
-{% if cans %}
+  {% endif %}
+  {% if cans %}
   <div class="item">
     <h2>Wine cans</h2>
 
@@ -96,5 +96,5 @@
       </tbody>
     </table>
   </div>
-{% endif %}
+  {% endif %}
 </div>

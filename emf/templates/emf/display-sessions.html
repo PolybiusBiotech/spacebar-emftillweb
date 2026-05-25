@@ -1,36 +1,36 @@
 {% if sessions %}
-	<table class="larger">
-		<colgroup>
-			<col width="20%">
-			<col width="20%">
-			<col width="20%">
-			{% if session_comments_exist %}
-			<col width="40%">
-			{% endif %}
-		</colgroup>
-		<thead class="sub">
-			<tr>
-				<th>Day</th>
-				<th>Open</th>
-				<th>Close</th>
-				{% if session_comments_exist %}
-				<th></th>
-				{% endif %}
-			</tr>
-		</thead>
-		<tbody>
-			{% for s in sessions %}
-			<tr>
-				<td>{{s.opening_time|date:"l"}}</td>
-				<td>{{s.opening_time|date:"H:i"}}</td>
-				<td>{{s.closing_time|date:"H:i"}}</td>
-				{% if session_comments_exist %}
-				<td>{{s.comment}}</td>
-				{% endif %}
-			</tr></li>
-			{% endfor %}
-		</tbody>
-	</table>
+<table class="larger">
+  <colgroup>
+    <col width="20%">
+    <col width="20%">
+    <col width="20%">
+    {% if session_comments_exist %}
+    <col width="40%">
+    {% endif %}
+  </colgroup>
+  <thead class="sub">
+    <tr>
+      <th>Day</th>
+      <th>Open</th>
+      <th>Close</th>
+      {% if session_comments_exist %}
+      <th></th>
+      {% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sessions %}
+    <tr>
+      <td>{{s.opening_time|date:"l"}}</td>
+      <td>{{s.opening_time|date:"H:i"}}</td>
+      <td>{{s.closing_time|date:"H:i"}}</td>
+      {% if session_comments_exist %}
+      <td>{{s.comment}}</td>
+      {% endif %}
+</tr></li>
+{% endfor %}
+</tbody>
+</table>
 {% else %}
-	<p>The event is over!</p>
+<p>The event is over!</p>
 {% endif %}

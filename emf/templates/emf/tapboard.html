@@ -17,84 +17,84 @@
     <div id="setup" class="d-none">
       <header><h1 onclick="_dev_tap()">EMF Tap Board Setup</h1></header>
       <div class="page">
-	<p id="setupStatus"></p>
-	<p></p>
-	<p></p>
-	<form class="d-none" id="setupForm" onsubmit="return finish_setup();">
-	  <p>
-	    <label for="stocklineSelect">Stock line:</label>
-	    <select name="stocklines" id="stocklineSelect">
-	      <option value="stockline/1">Fake stockline 1</option>
-	    </select>
-	  </p>
-	  <p>
-	    <label for="notePassword">Password for setting notes:</label>
-	  </p>
-	  <p>
-	    <input class="d-none" type="text" id="username" name="username" autocomplete="username" value="EMF">
-	    <input type="password" id="notePassword" autocomplete="off">
-	  </p>
-	  <p class="smaller">(Leave the password field blank if you do
-	    not need to enable the "Set stock line note" function on
-	    this display.)
-	  </p>
-	  <div class="center">
-	    <button type="submit">Configure</button>
-	  </div>
-	</form>
+        <p id="setupStatus"></p>
+        <p></p>
+        <p></p>
+        <form class="d-none" id="setupForm" onsubmit="return finish_setup();">
+          <p>
+            <label for="stocklineSelect">Stock line:</label>
+            <select name="stocklines" id="stocklineSelect">
+              <option value="stockline/1">Fake stockline 1</option>
+            </select>
+          </p>
+          <p>
+            <label for="notePassword">Password for setting notes:</label>
+          </p>
+          <p>
+            <input class="d-none" type="text" id="username" name="username" autocomplete="username" value="EMF">
+            <input type="password" id="notePassword" autocomplete="off">
+          </p>
+          <p class="smaller">(Leave the password field blank if you do
+            not need to enable the "Set stock line note" function on
+            this display.)
+          </p>
+          <div class="center">
+            <button type="submit">Configure</button>
+          </div>
+        </form>
       </div>
     </div>
     <div id="run" class="d-none">
       <div class="flex-column-vh100">
-	<header><h1 id="linename"></h1></header>
-	<div class="mb-1 flex-grow-1"><!-- spacer --></div>
-	<div id="logo">
-	  <img src="{% static "emf/img/tapboard-not-connected.svg" %}" alt="">
-	</div>
-	<div class="d-none" id="tastingNotesContainer">
-	  <div class="center mb-1" id="tastingNotes"></div>
-	  <div class="center">
-	    <button onclick="show_logo();">Close</button>
-	  </div>
-	</div>
-	<div class="d-none" id="noteFormContainer">
-	  <form class="center">
-	    <p>
-	      <label for="noteInput">What's the problem?</label>
-	    </p>
-	    <p>
-	      <button onclick="return set_note('It\'s frothy');">
-		It's frothy
-	      </button>
-	      <button onclick="return set_note('It\'s run out');">
-		It's run out
-	      </button>
-	    </p>
-	  </form>
-	  <!-- Use a separate form for the input box so the default action
-	       is "Update note" and not "It's frothy" -->
-	  <form class="center">
-	    <p>
-	      <input id="noteInput" value="">
-	    </p>
-	    <p>
-	      <button onclick="return set_note();">Update note</button>
-	      <button class="cancel" onclick="show_logo();" type="reset">
-		Cancel
-	      </button>
-	    </p>
-	  </form>
-	</div>
-	<div class="mb-1 flex-grow-1"><!-- spacer --></div>
-	<div class="center">
-	  <p><a onclick="show_tasting_notes()" id="product"></a></p>
-	</div>
-	<div class="center"><p id="price"></p></div>
-	<div class="center"><p id="linenote"></p></div>
-	<div class="position-relative">
-	  <button id="notebutton" onclick="show_note_form();">Problem?</button>
-	  <div class="center" id="status">Not connected to till</div>
-	</div>
+        <header><h1 id="linename"></h1></header>
+        <div class="mb-1 flex-grow-1"><!-- spacer --></div>
+        <div id="logo">
+          <img src="{% static "emf/img/tapboard-not-connected.svg" %}" alt="">
+        </div>
+        <div class="d-none" id="tastingNotesContainer">
+          <div class="center mb-1" id="tastingNotes"></div>
+          <div class="center">
+            <button onclick="show_logo();">Close</button>
+          </div>
+        </div>
+        <div class="d-none" id="noteFormContainer">
+          <form class="center">
+            <p>
+              <label for="noteInput">What's the problem?</label>
+            </p>
+            <p>
+              <button onclick="return set_note('It\'s frothy');">
+                It's frothy
+              </button>
+              <button onclick="return set_note('It\'s run out');">
+                It's run out
+              </button>
+            </p>
+          </form>
+          <!-- Use a separate form for the input box so the default action
+               is "Update note" and not "It's frothy" -->
+          <form class="center">
+            <p>
+              <input id="noteInput" value="">
+            </p>
+            <p>
+              <button onclick="return set_note();">Update note</button>
+              <button class="cancel" onclick="show_logo();" type="reset">
+                Cancel
+              </button>
+            </p>
+          </form>
+        </div>
+        <div class="mb-1 flex-grow-1"><!-- spacer --></div>
+        <div class="center">
+          <p><a onclick="show_tasting_notes()" id="product"></a></p>
+        </div>
+        <div class="center"><p id="price"></p></div>
+        <div class="center"><p id="linenote"></p></div>
+        <div class="position-relative">
+          <button id="notebutton" onclick="show_note_form();">Problem?</button>
+          <div class="center" id="status">Not connected to till</div>
+        </div>
       </div>
     </div>
     <template id="idleLogo">
@@ -103,8 +103,8 @@
   </body>
   <script>
     if ("serviceWorker" in navigator) {
-	navigator.serviceWorker.register(
-	    "{% url "tapboard-sw" %}", {scope: '/'});
+        navigator.serviceWorker.register(
+            "{% url "tapboard-sw" %}", {scope: '/'});
     }
   </script>
 </html>

@@ -5,17 +5,17 @@
     <title>{% block title %}tillweb{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-{% block style %}
+    {% block style %}
     <link rel="STYLESHEET" type="text/css" href="{% static "emf/css/whatson.css" %}">
-{% endblock %}
-{% block jquery %}
-{% endblock %}
+    {% endblock %}
+    {% block jquery %}
+    {% endblock %}
   </head>
   <body>
     <header>
-        <div>
-            {% block heading %}{% endblock %}
-        </div>
+      <div>
+        {% block heading %}{% endblock %}
+      </div>
     </header>
 
     <main>
@@ -26,8 +26,8 @@
     {% if user.is_authenticated %}
     <nav>
       <div id="Userinfo">
-	<p>Logged in as <a href="{% url "till-profile" %}">{{ user.get_full_name }}</a>. {% if admin_url and user.is_staff %}  <a href="{{admin_url}}">Edit in admin</a>.{% endif %}{% if user.is_staff %}  <a href="{% url "admin:index" %}">Go to admin.</a>{% endif %}</p>
-	<form method="post" action="/accounts/logout/">{% csrf_token %}<button type="submit">Log out</button></form>	
+        <p>Logged in as <a href="{% url "till-profile" %}">{{ user.get_full_name }}</a>. {% if admin_url and user.is_staff %}  <a href="{{admin_url}}">Edit in admin</a>.{% endif %}{% if user.is_staff %}  <a href="{% url "admin:index" %}">Go to admin.</a>{% endif %}</p>
+        <form method="post" action="/accounts/logout/">{% csrf_token %}<button type="submit">Log out</button></form>
       </div>
     </nav>
     {% endif %}

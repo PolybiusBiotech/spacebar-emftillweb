@@ -45,49 +45,49 @@
   <div>
     <h1>When is the bar open?</h1>
     {% if sessions %}
-	<table>
-		<colgroup>
-			<col width="20%">
-			<col width="20%">
-			<col width="20%">
-			{% if session_comments_exist %}
-			<col width="40%">
-			{% endif %}
-		</colgroup>
-		<thead class="sub">
-			<tr>
-				<th>Day</th>
-				<th>Open</th>
-				<th>Close</th>
-				{% if session_comments_exist %}
-				<th></th>
-				{% endif %}
-			</tr>
-		</thead>
-		<tbody>
-			{% for s in sessions %}
-			<tr>
-				<td>{{s.opening_time|date:"l"}}</td>
-				<td>{{s.opening_time|date:"H:i"}}</td>
-				<td>{{s.closing_time|date:"H:i"}}</td>
-				{% if session_comments_exist %}
-				<td>{{s.comment}}</td>
-				{% endif %}
-			</tr></li>
-			{% endfor %}
-		</tbody>
-	</table>
-    {% else %}
-    <p>The event is over!</p>
-    {% endif %}
-  </div>
+    <table>
+      <colgroup>
+        <col width="20%">
+        <col width="20%">
+        <col width="20%">
+        {% if session_comments_exist %}
+        <col width="40%">
+        {% endif %}
+      </colgroup>
+      <thead class="sub">
+        <tr>
+          <th>Day</th>
+          <th>Open</th>
+          <th>Close</th>
+          {% if session_comments_exist %}
+          <th></th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr>
+          <td>{{s.opening_time|date:"l"}}</td>
+          <td>{{s.opening_time|date:"H:i"}}</td>
+          <td>{{s.closing_time|date:"H:i"}}</td>
+          {% if session_comments_exist %}
+          <td>{{s.comment}}</td>
+          {% endif %}
+</tr></li>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p>The event is over!</p>
+{% endif %}
+</div>
 
+<div>
+  <h1>Event progress</h1>
   <div>
-    <h1>Event progress</h1>
-    <div>
-      {% include "emf/charts.html" %}
-    </div>
+    {% include "emf/charts.html" %}
   </div>
+</div>
 </div>
 
 <div class="split">
@@ -105,21 +105,21 @@
     <p>Pull requests welcome!</p>
 
     <p>A JSON API is available, accessible over HTTP GET or websocket;
-    see the documentation
-    at <a href="http://developer.emfcamp.org/">developer.emfcamp.org</a>.
+      see the documentation
+      at <a href="http://developer.emfcamp.org/">developer.emfcamp.org</a>.
   </div>
 
   <div class="align-bottom">
     <h3>Links requiring login</h3>
     <ul>
       <li>
-	<a href="{% url "till-profile" %}">User profile page</a>
+        <a href="{% url "till-profile" %}">User profile page</a>
       </li>
       <li>
-	<a href="{% url "tillweb-pubroot" pubname="detail" %}">Till web interface</a>
+        <a href="{% url "tillweb-pubroot" pubname="detail" %}">Till web interface</a>
       </li>
       <li>
-	<a href="{% url "admin:index" %}">Admin</a>
+        <a href="{% url "admin:index" %}">Admin</a>
       </li>
     </ul>
   </div>

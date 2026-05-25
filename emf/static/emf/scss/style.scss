@@ -8,64 +8,64 @@ $warning: #F77F02;
 $danger: #F5515E;
 
 @keyframes pulse {
-	0%, 100% { background-color: transparent; }
-	30%, 70% { background-color: $danger; }
+    0%, 100% { background-color: transparent; }
+    30%, 70% { background-color: $danger; }
 }
 
 table {
-	line-height: 1.5;
-	width: 100%;
-	border-spacing: 0;
+    line-height: 1.5;
+    width: 100%;
+    border-spacing: 0;
 
-	&.large {
-		font-size: 21pt;
-	}	
+    &.large {
+        font-size: 21pt;
+    }
 
-	thead {
-		th {
-			text-align: left;
-		}
-	}
+    thead {
+        th {
+            text-align: left;
+        }
+    }
 
-	tbody {
-		th {
-			text-align: left;
-		}
+    tbody {
+        th {
+            text-align: left;
+        }
 
-		&.sub th {
-			font-weight: 600;
-			padding-top: 12pt;
-			border-bottom: 1px solid $foreground;
-		}
+        &.sub th {
+            font-weight: 600;
+            padding-top: 12pt;
+            border-bottom: 1px solid $foreground;
+        }
 
-		.stock {
-			.orb {
-				background-color: black;
-				width: 0.6em;
-				height: 0.6em;
-				display: inline-block;
-				margin-right: 0.2em;
-				margin-bottom: 0.1em;
-				border-radius: 1em;
+        .stock {
+            .orb {
+                background-color: black;
+                width: 0.6em;
+                height: 0.6em;
+                display: inline-block;
+                margin-right: 0.2em;
+                margin-bottom: 0.1em;
+                border-radius: 1em;
 
-				&.lastfew {
-					animation: pulse 1s ease-in-out infinite;
-				}
+                &.lastfew {
+                    animation: pulse 1s ease-in-out infinite;
+                }
 
-				&.plenty {
-					background-color: $success;
-				}
+                &.plenty {
+                    background-color: $success;
+                }
 
-				&.low {
-					background-color: $warning;
-				}
-			}
-		}
+                &.low {
+                    background-color: $warning;
+                }
+            }
+        }
 
-		tr:nth-child(even) {
-			background-color: rgba(0, 0, 0, 0.05);
-		}
-	}
+        tr:nth-child(even) {
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+    }
 }
 
 .bargraph {
@@ -79,13 +79,13 @@ table {
 }
 
 .screen {
-	.bargraph {
-		height: 3em;
-	}
-	
-	.bar span {
-		font-size: 1.5em;
-	}
+    .bargraph {
+        height: 3em;
+    }
+
+    .bar span {
+        font-size: 1.5em;
+    }
 }
 
 
@@ -98,17 +98,17 @@ table {
     position: absolute;
     top: 0;
     left: 0;
-	color: $highlight2;
-	
-	.remaining {
-		background: $highlight;
-	}
-	
-	span {
-		font-size: 1em;
-		line-height: 2;
-		overflow: hidden;
-	}
+    color: $highlight2;
+
+    .remaining {
+        background: $highlight;
+    }
+
+    span {
+        font-size: 1em;
+        line-height: 2;
+        overflow: hidden;
+    }
 }
 
 
@@ -121,8 +121,8 @@ table {
     position: absolute;
     top: 0;
     left: 0;
-	
-	.remaining {
-		background: #123f8b;
-	}
+
+    .remaining {
+        background: #123f8b;
+    }
 }

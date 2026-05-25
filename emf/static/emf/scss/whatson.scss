@@ -8,163 +8,163 @@ $highlight: #F5515E;
 $highlight2: #2AE28C;
 
 body {
-	max-width: 72em;
-	margin: 2em auto;
-	min-height: 100%;
-	background-color: $background;
-	color: $foreground;
-	font-size: 12pt;
-	font-family: Open Sans, sans-serif;
+    max-width: 72em;
+    margin: 2em auto;
+    min-height: 100%;
+    background-color: $background;
+    color: $foreground;
+    font-size: 12pt;
+    font-family: Open Sans, sans-serif;
 }
 
 a:link, a:visited, a:hover {
-	color: $foreground;
+    color: $foreground;
 }
 
 h1, h2, h3, h4, h5, h6 {
-	font-family: Raleway, sans-serif;
+    font-family: Raleway, sans-serif;
 }
 
 header {
-	margin-bottom: 2.5%;
-	
-	div {
-		display: flex;
-		width: 100%;
-		align-items: center;
+    margin-bottom: 2.5%;
 
-		.logo {
-			max-width: 20em;
-			flex: 2;
-		}
+    div {
+        display: flex;
+        width: 100%;
+        align-items: center;
 
-		h1 {		
-			text-align: center;
-			font-size: 2.5em;
-			flex: 7;
-			margin-top: 0;
-		}
+        .logo {
+            max-width: 20em;
+            flex: 2;
+        }
 
-		.status {
-			flex: 1;
-			flex-direction: column;
-			align-items: flex-end;
-			text-align: center;
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            flex: 7;
+            margin-top: 0;
+        }
 
-			h2 {
-				background: $background;
-				color: $foreground;
-				border-radius: 0.25em;
-				border: 2px solid $foreground;
-				padding: .25em .5em;
-				margin: 0;
-			}
+        .status {
+            flex: 1;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: center;
 
-			&.closed h2 {
-				background-color: $background;
-				color: $foreground;
-			}
+            h2 {
+                background: $background;
+                color: $foreground;
+                border-radius: 0.25em;
+                border: 2px solid $foreground;
+                padding: .25em .5em;
+                margin: 0;
+            }
 
-			&.open h2 {
-				background-color: $foreground;
-				color: $background;
-			}
+            &.closed h2 {
+                background-color: $background;
+                color: $foreground;
+            }
 
-			p {
-				margin: 1em 0 0 0;
-			}
-		}
+            &.open h2 {
+                background-color: $foreground;
+                color: $background;
+            }
+
+            p {
+                margin: 1em 0 0 0;
+            }
+        }
 
 
-	}
+    }
 }
 
 .split {
-	display: flex;
+    display: flex;
 
-	& > div {
-		flex: 1 1 auto;
-		width: 50%;
-		margin: 0 1em;
+    & > div {
+        flex: 1 1 auto;
+        width: 50%;
+        margin: 0 1em;
 
-		.align-bottom {
-			margin-top: auto;
-		}
-	}
+        .align-bottom {
+            margin-top: auto;
+        }
+    }
 }
 
 .split > div:first-child {
-	margin-left: 0;
+    margin-left: 0;
 }
 
 .split > div:last-child {
-	margin-right: 0;
+    margin-right: 0;
 }
 
 .alert-block {
-	background-color: $highlight2;
-	padding: 1em;
+    background-color: $highlight2;
+    padding: 1em;
 }
 
 @media screen and ( max-width: 1024px ) {
-	body {
-		margin: 2em;
-	}
+    body {
+        margin: 2em;
+    }
 
-	header {
-		div {
-			.logo {
-				max-width: 10em;
-				flex: auto;
-			}
-		}
-	}
+    header {
+        div {
+            .logo {
+                max-width: 10em;
+                flex: auto;
+            }
+        }
+    }
 
-	table {
-	    .stock {
-		text-align: center;
-		.text {
-		    display: none;
-		}
-		.orb {
-		    width: 1em;
-		    height: 1em;
-		    margin-bottom: -0.1em;
-		    border-radius: 1em;
-		}
-	    }
-	}
+    table {
+        .stock {
+            text-align: center;
+            .text {
+                display: none;
+            }
+            .orb {
+                width: 1em;
+                height: 1em;
+                margin-bottom: -0.1em;
+                border-radius: 1em;
+            }
+        }
+    }
 }
 
 @media screen and ( max-width: 768px ) {
-	header {
-		div {
-			flex-direction: column;
-			align-items: center;
+    header {
+        div {
+            flex-direction: column;
+            align-items: center;
 
-			.logo {
-				max-width: 15em;
-			}
+            .logo {
+                max-width: 15em;
+            }
 
-			h1 {
-				margin-top: .7em;
-				width: 100%;
-			}
+            h1 {
+                margin-top: .7em;
+                width: 100%;
+            }
 
-			.status {
-				align-items: center;
-			}
-		
-		}
-	}
+            .status {
+                align-items: center;
+            }
 
-	.split {
-		display: block;
-		
-		& > div {
-			width: 100%;
-			flex: unset;
-			margin: 0;
-		}
-	}
+        }
+    }
+
+    .split {
+        display: block;
+
+        & > div {
+            width: 100%;
+            flex: unset;
+            margin: 0;
+        }
+    }
 }
