@@ -43,15 +43,23 @@ To set up a development environment, ensure you have `poetry`
 installed, and then in the project root run `poetry install` and `npm
 install`.
 
+Ensure there is a postgresql database called `emfcamp`. (`createdb
+emfcamp` if unsure.) Either restore an existing quicktill database
+dump into it (`zcat emfcamp.sql.gz | psql emfcamp` assuming the
+`emfcamp` database is empty), or set up a new empty database using
+`poetry run runtill -d dbname=emfcamp syncdb`
+
+(If you are a bar team member, you can obtain a database dump from
+your profile page.)
+
 The various Django project management commands are then available via
 `poetry run tillweb`, for example `poetry run tillweb check`, `poetry
-run tillweb migrate`, `poetry run tillweb adduser` and `poetry run
-tillweb runserver` to run the development server.
+run tillweb migrate`, `poetry run tillweb createsuperuser` and `poetry
+run tillweb runserver` to run the development server.
 
 The tillweb repository does not include the packed Javascript and CSS
 necessary for the quicktill web interface project to run in
-`tillweb/static/bundles/`. To regenerate these run `npm run build`
-```
+`tillweb/static/bundles/`. To regenerate these run `npm run build`.
 
 The SCSS files in `emf/static/emf/scss/` can be converted to CSS by
 running `npm run emfsass`, and you can start a process that watches
