@@ -8,49 +8,37 @@
     </colgroup>
     <thead>
       <tr>
-	<th>Name</th>
-	<th>ABV</th>
-	<th>Price</th>
-	<th>Stock status</th>
+	<th scope="col">Name</th>
+	<th scope="col">ABV</th>
+	<th scope="col">Price</th>
+	<th scope="col">Stock status</th>
       </tr>
     </thead>
 
     {% if ales %}
-    <thead class="sub">
+    <tbody class="sub">
       <tr>
 	<th colspan="4">Real Ales</th>
       </tr>
-    </thead>
-    <tbody>
-      {% with ales as lines %}
-      {% include "emf/ontap-lines.html" %}
-      {% endwith %}
+      {% include "emf/ontap-lines.html" with lines=ales %}
     </tbody>
     {% endif %}
 
     {% if kegs %}
-    <thead class="sub">
+    <tbody class="sub">
       <tr>
 	<th colspan="4">Keg Taps</th>
       </tr>
-    </thead>
-    <tbody>
-      {% with kegs as lines %}
-      {% include "emf/ontap-lines.html" %}
-      {% endwith %}
+      {% include "emf/ontap-lines.html" with lines=kegs %}
     </tbody>
     {% endif %}
 
     {% if ciders %}
-    <thead class="sub">
+    <tbody class="sub">
       <tr>
 	<th colspan="4">Ciders</th>
       </tr>
-    </thead>
-    <tbody>
-      {% with ciders as lines %}
-      {% include "emf/ontap-lines.html" %}
-      {% endwith %}
+      {% include "emf/ontap-lines.html" with lines=ciders %}
     </tbody>
     {% endif %}
   </table>

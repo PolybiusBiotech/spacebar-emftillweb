@@ -20,22 +20,24 @@ current selection.</p>
   </colgroup>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>ABV</th>
-      <th>Price</th>
-      <th>Stock</th>
+      <th scope="col">Name</th>
+      <th scope="col">ABV</th>
+      <th scope="col">Price</th>
+      <th scope="col" class="stock">Stock</th>
     </tr>
   </thead>
+  {% comment %}
   <tbody>
+    {% endcomment %}
     {% for p, remain_pct in products %}
     {% ifchanged p.department.description %}
+    {% if not forloop.first %}
   </tbody>
-  <thead class="sub">
+  {% endif %}
+  <tbody class="sub">
     <tr>
-      <th colspan="4">{{p.department.description}}</th>
+      <th scope="col" colspan="4">{{p.department.description}}</th>
     </tr>
-  </thead>
-  <tbody>
     {% endifchanged %}
     <tr>
       <td>{{ p.manufacturer }} {{ p.name }}</td>

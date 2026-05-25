@@ -25,15 +25,19 @@ table {
 		th {
 			text-align: left;
 		}
-		
+	}
+
+	tbody {
+		th {
+			text-align: left;
+		}
+
 		&.sub th {
 			font-weight: 600;
 			padding-top: 12pt;
 			border-bottom: 1px solid $foreground;
 		}
-	} 
 
-	tbody {
 		.stock {
 			.orb {
 				background-color: black;
@@ -58,7 +62,7 @@ table {
 			}
 		}
 
-		tr:nth-child(odd) {
+		tr:nth-child(even) {
 			background-color: rgba(0, 0, 0, 0.05);
 		}
 	}

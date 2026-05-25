@@ -121,21 +121,18 @@ header {
 	}
 
 	table {
-		tbody {
-			.stock {
-				text-align: center;
-
-				.text {
-					display: none;
-				}
-				.orb {
-					width: 1em;
-					height: 1em;
-					margin-bottom: -0.1em;
-					border-radius: 1em;
-				}
-			}
+	    .stock {
+		text-align: center;
+		.text {
+		    display: none;
 		}
+		.orb {
+		    width: 1em;
+		    height: 1em;
+		    margin-bottom: -0.1em;
+		    border-radius: 1em;
+		}
+	    }
 	}
 }
 
