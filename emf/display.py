@@ -41,7 +41,7 @@ class CansAndBottles(Display):
              .filter(StockType.dept_id.in_([60, 62, 64, 66]))\
              .filter(StockType.remaining > 0.0)\
              .filter(StockType.abv != None)\
-             .options(undefer('remaining'))\
+             .options(undefer(StockType.remaining))\
              .order_by(StockType.manufacturer, StockType.name)\
              .all()  # noqa E711
 
@@ -70,7 +70,7 @@ class Wines(Display):
                 .filter(StockType.dept_id == 95)\
                 .filter(StockType.remaining > 0.0)\
                 .filter(StockType.abv != None)\
-                .options(undefer('remaining'))\
+                .options(undefer(StockType.remaining))\
                 .order_by(StockType.manufacturer, StockType.name)\
                 .all()  # noqa E711
 
@@ -100,7 +100,7 @@ class WinesAndSpirits(Display):
         spirits = s.query(StockType)\
                    .filter(StockType.dept_id == 40)\
                    .filter(StockType.remaining > 0.0)\
-                   .options(undefer('remaining'))\
+                   .options(undefer(StockType.remaining))\
                    .order_by(StockType.manufacturer, StockType.name)\
                    .all()
 
@@ -116,7 +116,7 @@ class SpiritsAndMixers(Display):
         spirits = s.query(StockType)\
                    .filter(StockType.dept_id == 40)\
                    .filter(StockType.remaining > 0.0)\
-                   .options(undefer('remaining'))\
+                   .options(undefer(StockType.remaining))\
                    .order_by(StockType.manufacturer, StockType.name)\
                    .all()
 
@@ -124,7 +124,7 @@ class SpiritsAndMixers(Display):
             StockType, StockType.remaining / StockType.total * 100.0)\
                 .filter(StockType.dept_id == 70)\
                 .filter(StockType.remaining > 0.0)\
-                .options(undefer('remaining'))\
+                .options(undefer(StockType.remaining))\
                 .order_by(StockType.manufacturer, StockType.name)\
                 .all()  # noqa E127
 
@@ -159,7 +159,7 @@ class SoftDrinks(Display):
                        StockType.remaining / StockType.total * 100.0)\
                 .filter(StockType.dept_id.in_([70, 72]))\
                 .filter(StockType.remaining > 0.0)\
-                .options(undefer('remaining'))\
+                .options(undefer(StockType.remaining))\
                 .order_by(StockType.manufacturer, StockType.name)\
                 .all()
 
@@ -176,7 +176,7 @@ class Snacks(Display):
                          StockType.remaining / StockType.total * 100.0)\
                   .filter(StockType.dept_id == 50)\
                   .filter(StockType.remaining > 0.0)\
-                  .options(undefer('remaining'))\
+                  .options(undefer(StockType.remaining))\
                   .order_by(StockType.manufacturer, StockType.name)\
                   .all()
 
