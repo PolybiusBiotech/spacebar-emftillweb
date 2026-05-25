@@ -63,9 +63,9 @@ table {
 
 .bargraph {
     width: 100%;
-    background-color: rgba(0, 0, 0, 0.25);
+    border: .15em solid $highlightBG;
     color: #000000;
-    height: 2em;
+    height: 2.5em;
     border-radius: 10em;
     overflow: hidden;
     position: relative;
@@ -76,14 +76,11 @@ table {
         border-radius: 10em;
         height: inherit;
         text-align: center;
-        position: absolute;
-        top: 0;
-        left: 0;
         color: $highlightFG;
 
         span {
             font-size: 1em;
-            line-height: 2;
+            line-height: 2.3em;
             overflow: hidden;
         }
     }
