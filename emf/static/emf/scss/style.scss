@@ -1,11 +1,4 @@
-$background: #afc944;
-$foreground: #213018;
-$highlight: #2AE28C;
-$highlight2: #213018;
-
-$success: #2AE28C;
-$warning: #F77F02;
-$danger: #F5515E;
+@use 'colours' as *;
 
 @keyframes pulse {
     0%, 100% { background-color: transparent; }
@@ -76,6 +69,24 @@ table {
     border-radius: 10em;
     overflow: hidden;
     position: relative;
+
+    .bar {
+        background: $highlightBG;
+        overflow: hidden;
+        border-radius: 10em;
+        height: inherit;
+        text-align: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        color: $highlightFG;
+
+        span {
+            font-size: 1em;
+            line-height: 2;
+            overflow: hidden;
+        }
+    }
 }
 
 .screen {
@@ -85,29 +96,6 @@ table {
 
     .bar span {
         font-size: 1.5em;
-    }
-}
-
-
-.bar {
-    background: $highlight;
-    overflow: hidden;
-    border-radius: 10em;
-    height: inherit;
-    text-align: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    color: $highlight2;
-
-    .remaining {
-        background: $highlight;
-    }
-
-    span {
-        font-size: 1em;
-        line-height: 2;
-        overflow: hidden;
     }
 }
 

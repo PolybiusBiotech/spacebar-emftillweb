@@ -2,9 +2,7 @@
 /* -*- coding: utf-8 -*- */
 
 @charset "UTF-8";
-
-$background: #000730;
-$foreground: white;
+@use 'colours' as *;
 @use 'fonts' as *;
 
 /* Reset based on
