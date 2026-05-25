@@ -10,11 +10,11 @@
   </colgroup>
   <thead class="sub">
     <tr>
-      <th>Day</th>
-      <th>Open</th>
-      <th>Close</th>
+      <th scope="col">Day</th>
+      <th scope="col">Open</th>
+      <th scope="col">Close</th>
       {% if session_comments_exist %}
-      <th></th>
+      <th scope="col"></th>
       {% endif %}
     </tr>
   </thead>
@@ -27,9 +27,9 @@
       {% if session_comments_exist %}
       <td>{{s.comment}}</td>
       {% endif %}
-</tr></li>
-{% endfor %}
-</tbody>
+    </tr>
+    {% endfor %}
+  </tbody>
 </table>
 {% else %}
 <p>The event is over!</p>
