@@ -26,7 +26,7 @@
     {% if user.is_authenticated %}
     <nav>
       <div id="Userinfo">
-	<p>Logged in as <a href="{% url "user-profile-page" %}">{{ user.get_full_name }}</a>. {% if admin_url and user.is_staff %}  <a href="{{admin_url}}">Edit in admin</a>.{% endif %}{% if user.is_staff %}  <a href="{% url "admin:index" %}">Go to admin.</a>{% endif %}</p>
+	<p>Logged in as <a href="{% url "till-profile" %}">{{ user.get_full_name }}</a>. {% if admin_url and user.is_staff %}  <a href="{{admin_url}}">Edit in admin</a>.{% endif %}{% if user.is_staff %}  <a href="{% url "admin:index" %}">Go to admin.</a>{% endif %}</p>
 	<form method="post" action="/accounts/logout/">{% csrf_token %}<button type="submit">Log out</button></form>	
       </div>
     </nav>

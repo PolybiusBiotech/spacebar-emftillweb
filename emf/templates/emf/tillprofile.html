@@ -8,15 +8,17 @@
   <div class="row">
     <div class="col">
       {% if tilluser %}
-      {% if not tilluser.enabled %}
-      <div class="alert alert-error">
-	Your till user "{{tilluser.fullname}}" is disabled, so your
+      <div class="alert alert-info">
+	This web account is linked with till user
+	"<a href="{{tilluser.get_absolute_url}}">{{tilluser.fullname}}</a>".
+	{% if not tilluser.enabled %}
+	This till user is disabled, so your
 	access to the till web interface is read-only.
+	{% endif %}
       </div>
-      {% endif %}
       {% else %}
       <div class="alert alert-warning">
-	<p>Your web user account is not connected to a till user account,
+	<p>This web account is not connected to a till user,
 	  so your access to the till web interface is read-only.</p>
 	<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#tillUserSetup">Create or connect to a till user</button>
       </div>
