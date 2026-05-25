@@ -10,9 +10,10 @@
 {% block content %}
 {{ content }}
 
-<p>Note: Not all draught beers and ciders are on sale at the same
-time. See <a href="{% url "frontpage" %}">the front page</a> for the
-current selection.</p>
+<div class="alert-block">
+  <strong>Note:</strong> Not all draught beers and ciders are on sale at the same
+  time. See <a href="{% url "frontpage" %}">the front page</a> for the
+  current selection.</div>
 
 <table>
   <colgroup>
