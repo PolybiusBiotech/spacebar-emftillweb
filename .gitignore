@@ -5,3 +5,4 @@ dist/
 /tillweb/static/bundles/
 /media/
 /emf/static/emf/css/
+tillweb_db.sqlite3
