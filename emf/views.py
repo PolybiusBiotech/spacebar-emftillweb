@@ -99,7 +99,7 @@ dtf = "Y-m-d H:i"
 @login_required
 def database_dump(request):
     first_session = emf.models.Session.objects.all().first()
-    if first_session and datetime.datetime.now() > first_session.opening_time:
+    if first_session and current_time() > first_session.opening_time:
         return HttpResponseForbidden("You can't dump the database after "
                                      "the start of the event.")
 
