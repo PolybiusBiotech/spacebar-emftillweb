@@ -31,32 +31,32 @@ table {
             border-bottom: 1px solid $foreground;
         }
 
-        .stock {
-            .orb {
-                background-color: black;
-                width: 0.6em;
-                height: 0.6em;
-                display: inline-block;
-                margin-right: 0.2em;
-                margin-bottom: 0.1em;
-                border-radius: 1em;
-
-                &.lastfew {
-                    animation: pulse 1s ease-in-out infinite;
-                }
-
-                &.plenty {
-                    background-color: $success;
-                }
-
-                &.low {
-                    background-color: $warning;
-                }
-            }
-        }
-
         tr:nth-child(even) {
             background-color: rgba(0, 0, 0, 0.05);
+        }
+    }
+}
+
+.stock {
+    .orb {
+        background-color: black;
+        width: 0.6em;
+        height: 0.6em;
+        display: inline-block;
+        margin-right: 0.2em;
+        margin-bottom: 0.1em;
+        border-radius: 1em;
+
+        &.lastfew {
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        &.plenty {
+            background-color: $success;
+        }
+
+        &.low {
+            background-color: $warning;
         }
     }
 }
