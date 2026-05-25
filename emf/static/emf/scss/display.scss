@@ -1,8 +1,7 @@
 @charset "UTF-8";
-
-@import url( 'style.css' );
 @use 'colours' as *;
 @use 'fonts' as *;
+@use 'style';
 
 body {
     // background: $foreground url('/static/emf/img/bg.png');
