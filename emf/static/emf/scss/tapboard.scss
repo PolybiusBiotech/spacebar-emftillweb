@@ -2,66 +2,26 @@
 /* -*- coding: utf-8 -*- */
 
 @charset "UTF-8";
-@use 'colours' as *;
 @use 'fonts' as *;
 
-/* Reset based on
-   http://meyerweb.com/eric/tools/css/reset/
-   v2.0 | 20110126
-   License: none (public domain)
-*/
+// Main colours
+$foreground: white;
+$background: #000730;
 
-html, body, div, span, applet, object, iframe,
-h1, h2, h3, h4, h5, h6, p, blockquote, pre,
-a, abbr, acronym, address, big, cite, code,
-del, dfn, em, img, ins, kbd, q, s, samp,
-small, strike, strong, sub, sup, tt, var,
-b, u, i, center,
-dl, dt, dd, ol, ul, li,
-fieldset, form, label, legend,
-table, caption, tbody, tfoot, thead, tr, th, td,
-article, aside, canvas, details, embed,
-figure, figcaption, footer, header, hgroup,
-menu, nav, output, ruby, section, summary,
-time, mark, audio, video {
-    margin: 0;
-    padding: 0;
-    border: 0;
-    font-size: 100%;
-    font: inherit;
-    vertical-align: baseline;
-}
-/* HTML5 display-role reset for older browsers */
-article, aside, details, figcaption, figure,
-footer, header, hgroup, menu, nav, section {
-    display: block;
-}
-body {
-    line-height: 1;
-}
-ol, ul {
-    list-style: none;
-}
-blockquote, q {
-    quotes: none;
-}
-blockquote:before, blockquote:after,
-q:before, q:after {
-    content: '';
-    content: none;
-}
-table {
-    border-collapse: collapse;
-    border-spacing: 0;
-}
+$highlightFG: #000730; // text colour for highlights
+$highlightBG: #2AE28C; // background colour for highlights
+$highlightAlt: #2EADD9;
 
-/* Tap board section */
+$success: #2AE28C;
+$warning: #F77F02;
+$danger: #F5515E;
 
 body {
     background: $background;
     color: $foreground;
     font-size: 24pt;
     font-family: $bodyFont;
+    margin: 0;
 }
 
 .d-none {
@@ -76,10 +36,6 @@ button {
     border-radius: 10px;
     padding: 10px;
     margin-bottom: 0.25em;
-
-    &.cancel {
-	// background: #505050;
-    }
 }
 
 a, a:visited {
@@ -88,78 +44,25 @@ a, a:visited {
     cursor: auto;
 }
 
-.page {
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-top: 40px;
-}
-
-input, select {
-    font: inherit;
-    font-size: inherit;
-}
-
-.position-relative {
-    position: relative;
+h1, h2, h3, h4, h5, h6 {
+    font-family: $headlineFont;
+    padding: 0;
+    margin: 0 0 0.25em 0;
 }
 
 header {
-    text-align: center;
-    margin-top: 15px;
-    height: 50px;
-}
-
-#run div header {
     position: absolute;
-    left: 15px;
-    top: 0px;
-}
+    padding: 1rem;
 
-h1 {
-    font-size: 30pt;
-}
+    h1 {
+        font-size: 1.2em;
+    }
 
-h1, h2, h3, h4, h5, h6 {
-    font-family: $headlineFont;
-    margin-top: 0;
-    margin-bottom: 0.2em;
-}
-
-p {
-    margin-top: 0;
-    margin-bottom: 0.5em;
-}
-
-.flex-column-vh100 {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    height: 100vh;
-}
-
-.flex-grow-1 {
-    flex-grow: 1;
-}
-
-.mb-1 {
-    margin-bottom: 0.25em;
-}
-
-.center {
-    text-align: center;
-}
-
-.smaller {
-    font-size: 18pt;
-}
-
-div.caution {
-    display: inline-block;
-    background: no-repeat url('../img/caution-icon.svg');
-    width: 30px;
-    height: 30px;
-    vertical-align: bottom;
+    #notebutton {
+        font-size: 10pt;
+        display: block;
+        margin: 0;
+    }
 }
 
 #menubutton {
@@ -176,52 +79,120 @@ div.caution {
     outline: inherit;
 }
 
-#setupForm {
-    display: block;
-    margin-top: 50px;
-    margin-left: 50px;
-    margin-right: 50px;
+#tastingNotesContainer {
+    max-height: 25%;
+    overflow: scroll;
 }
 
-#logo {
-    width: 100%;
-    text-align: center;
-    overflow: hidden;
+#tastingNotesContainer,
+#noteFormContainer {
+    position: absolute;
+    top: 25%;
+    left: 10%;
+    right: 10%;
+    padding: 1em;
+    background-color: rgba(0, 0, 0, 0.8);
+    border: .1em solid white;
+    backdrop-filter: blur(10px);
+    border-radius: .5em;
+    box-shadow: 0 0 .5em rgba(0, 0, 0, .75);
 
-    img {
-	max-height: 100%;
-	max-width: 100%;
+    p {
+        margin: 0 0 .5em 0;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+
+    input {
+        font-size: inherit;
     }
 }
 
-#tastingNotes {
-    margin-left: auto;
-    margin-right: auto;
-    width: 75%;
+.page {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    padding: 1rem;
+    box-sizing: border-box;
+
+    .logo {
+        flex: 1;
+        min-height: 0;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+
+    p {
+        margin: 0;
+        padding: 0;
+        flex-shrink: 0;
+        text-align: center;
+    }
+
+    .product {
+        font-weight: bold;
+        font-size: 1em;
+        margin-top: 0.5em;
+    }
+
+    .price {
+        font-size: 1em;
+    }
+
+    .linenote {
+        font-size: 0.8em;
+
+        &.caution::before {
+            content: '';
+            display: inline-block;
+            background: no-repeat url('../img/caution-icon.svg');
+            width: 30px;
+            height: 30px;
+            vertical-align: middle;
+            margin-right: .2em;
+        }
+    }
+
+    .totalStock, .connectedStock {
+        font-size: 0.8em;
+    }
 }
 
-#notebutton {
-    font-size: 12pt;
-    position: absolute;
-    right: 5px;
-    top: -40px;
-}
+#setup {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    padding: 1rem;
+    box-sizing: border-box;
 
-#status {
-    margin-bottom: 4px;
-    font-size: 18pt;
-}
+    header {
+        position: relative;
+    }
 
-#product {
-    font-weight: 600;
-    font-size: 32pt;
-}
+    .page p {
+        text-align: left;
+        margin-bottom: 0.5em;
 
-#run p {
-    margin: .2em 0;
-}
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
 
-#linenode {
-    background-color: $foreground;
-    columns: $background;
+    input, select {
+        font-size: inherit;
+        margin-bottom: 1em;
+    }
+
+    .smaller {
+        font-size: 0.8em;
+    }
+
+    #setupStatus {
+        margin-bottom: 1em;
+    }
 }

@@ -13,13 +13,37 @@
     <script src="{% static "emf/js/tapboard.js" %}" defer></script>
   </head>
   <body>
-    <button id="menubutton" onclick="setup_mode()"><img src="{% static "emf/img/tapboard-menu-icon-white.svg" %}" alt=""></button>
+
+    <button id="menubutton"><img src="{% static "emf/img/tapboard-menu-icon-white.svg" %}" alt=""></button>
+
+    <div class="d-none" id="tastingNotesContainer">
+      <div id="tastingNotes"></div>
+    </div>
+
+    <div class="d-none" id="noteFormContainer">
+      <form>
+        <p><label for="noteInput">What's the problem?</label></p>
+        <p>
+          <button class="setNote">It's frothy</button>
+          <button class="setNote">It's run out</button>
+        </p>
+        <p><input id="noteInput" value=""></p>
+        <p>
+          <button class="updateNote">Update note</button>
+          <button class="cancel" type="reset">Cancel</button>
+        </p>
+      </form>
+    </div>
+
     <div id="setup" class="d-none">
-      <header><h1 onclick="_dev_tap()">EMF Tap Board Setup</h1></header>
+      <header>
+        <h1>EMF Tap Board Setup</h1>
+      </header>
+
+      <!-- Setup page -->
       <div class="page">
         <p id="setupStatus"></p>
-        <p></p>
-        <p></p>
+
         <form class="d-none" id="setupForm" onsubmit="return finish_setup();">
           <p>
             <label for="stocklineSelect">Stock line:</label>
@@ -44,67 +68,31 @@
         </form>
       </div>
     </div>
+
+    <!-- Run pages -->
     <div id="run" class="d-none">
-      <div class="flex-column-vh100">
-        <header><h1 id="linename"></h1></header>
-        <div class="mb-1 flex-grow-1"><!-- spacer --></div>
-        <div id="logo">
-          <img src="{% static "emf/img/tapboard-not-connected.svg" %}" alt="">
-        </div>
-        <div class="d-none" id="tastingNotesContainer">
-          <div class="center mb-1" id="tastingNotes"></div>
-          <div class="center">
-            <button onclick="show_logo();">Close</button>
-          </div>
-        </div>
-        <div class="d-none" id="noteFormContainer">
-          <form class="center">
-            <p>
-              <label for="noteInput">What's the problem?</label>
-            </p>
-            <p>
-              <button onclick="return set_note('It\'s frothy');">
-                It's frothy
-              </button>
-              <button onclick="return set_note('It\'s run out');">
-                It's run out
-              </button>
-            </p>
-          </form>
-          <!-- Use a separate form for the input box so the default action
-               is "Update note" and not "It's frothy" -->
-          <form class="center">
-            <p>
-              <input id="noteInput" value="">
-            </p>
-            <p>
-              <button onclick="return set_note();">Update note</button>
-              <button class="cancel" onclick="show_logo();" type="reset">
-                Cancel
-              </button>
-            </p>
-          </form>
-        </div>
-        <div class="mb-1 flex-grow-1"><!-- spacer --></div>
-        <div class="center">
-          <p><a onclick="show_tasting_notes()" id="product"></a></p>
-        </div>
-        <div class="center"><p id="price"></p></div>
-        <div class="center"><p id="linenote"></p></div>
-        <div class="position-relative">
-          <button id="notebutton" onclick="show_note_form();">Problem?</button>
-          <div class="center" id="status">Not connected to till</div>
-        </div>
+      <header>
+        <h1 id="linename"></h1>
+        <button id="notebutton">Report a problem</button>
+      </header>
+
+      <div class="page">
+        <div class="logo" style="background-image: url('{% static "emf/img/unknown-brand.png" %}');"></div>
+        <p class="product"></p>
+        <p class="price"></p>
+        <p class="linenote">Not connected to till</p>
+        <p class="connectedStock"></p>
+        <p class="totalStock"></p>
       </div>
     </div>
-    <template id="idleLogo">
-      <img src="{% static "emf/img/unknown-brand.png" %}" alt="">
-    </template>
+
   </body>
+
   <script>
     if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register(
             "{% url "tapboard-sw" %}", {scope: '/'});
     }
   </script>
+
 </html>
