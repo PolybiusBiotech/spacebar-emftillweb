@@ -4,9 +4,10 @@
 @charset "UTF-8";
 @use 'fonts' as *;
 
+
 // Main colours
 $foreground: white;
-$background: #000730;
+$background: #74757c;
 
 $highlightFG: #000730; // text colour for highlights
 $highlightBG: #2AE28C; // background colour for highlights
@@ -15,6 +16,12 @@ $highlightAlt: #2EADD9;
 $success: #2AE28C;
 $warning: #F77F02;
 $danger: #F5515E;
+
+@keyframes pulse {
+    0%, 100% { background-color: transparent; }
+    30%, 70% { background-color: $warning; }
+}
+
 
 body {
     background: $background;
@@ -36,6 +43,33 @@ button {
     border-radius: 10px;
     padding: 10px;
     margin-bottom: 0.25em;
+
+    &.report {
+        width: 5em;
+        height: 5em;
+        border: 5px solid #74757c;
+        outline: 3px solid #aaabba;
+        background: #F57D87;
+        background: radial-gradient(circle,rgba(245, 125, 135, 1) 0%, rgba(245, 81, 94, 1) 70%, rgba(227, 50, 64, 1) 100%);
+        box-shadow: 0 0 3px rgba(0, 0, 0, 1);
+        padding: 0;
+        overflow: hidden;
+
+        span {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-image: url('../img/alert-triangle.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 75%;
+        }
+
+        &:active {
+            background: #541e2c;
+            background: radial-gradient(circle, rgba(84, 30, 44, 1) 0%, rgba(110, 31, 32, 1) 70%, rgba(84, 17, 22, 1) 100%);
+        }
+    }
 }
 
 a, a:visited {
@@ -144,21 +178,24 @@ header {
     }
 
     .linenote {
-        font-size: 0.8em;
+        font-size: 0.6em;
 
         &.caution::before {
             content: '';
             display: inline-block;
-            background: no-repeat url('../img/caution-icon.svg');
-            width: 30px;
-            height: 30px;
+            background-color: $warning;
+            width: 1em;
+            height: 1em;
             vertical-align: middle;
             margin-right: .2em;
+            margin-bottom: .2em;
+            border-radius: 1em;
+            animation: pulse 1s ease-in-out infinite;
         }
     }
 
     .totalStock, .connectedStock {
-        font-size: 0.8em;
+        font-size: 0.6em;
     }
 }
 
@@ -189,7 +226,7 @@ header {
     }
 
     .smaller {
-        font-size: 0.8em;
+        font-size: 0.6em;
     }
 
     #setupStatus {
