@@ -3,19 +3,11 @@
 
 @charset "UTF-8";
 @use 'fonts' as *;
-
+@use 'colours' as *;
 
 // Main colours
 $foreground: white;
 $background: #74757c;
-
-$highlightFG: #000730; // text colour for highlights
-$highlightBG: #2AE28C; // background colour for highlights
-$highlightAlt: #2EADD9;
-
-$success: #2AE28C;
-$warning: #F77F02;
-$danger: #F5515E;
 
 @keyframes pulse {
     0%, 100% { background-color: transparent; }
@@ -170,14 +162,15 @@ header {
     .product {
         font-weight: bold;
         font-size: 1em;
-        margin-top: 0.5em;
     }
 
     .price {
-        font-size: 1em;
+        font-size: .8em;
+        line-height: 1;
     }
 
     .linenote {
+        margin-top: 0.5em;
         font-size: 0.6em;
 
         &.caution::before {
@@ -195,7 +188,47 @@ header {
     }
 
     .totalStock, .connectedStock {
-        font-size: 0.6em;
+        margin-top: 0.5em;
+
+        &:first-child {
+            margin-top: 0;
+        }
+
+        span {
+            line-height: 1;
+        }
+
+        .label {
+            font-size: 0.6em;
+            margin-bottom: 0;
+        }
+
+        .well {
+            background: #aaabba;
+            width: 75vw;
+            display: grid;
+            border-radius: 1em;
+            overflow: hidden;
+            border: 5px solid #74757c;
+            outline: 3px solid #aaabba;
+            margin: 0 auto;
+
+            .label {
+                grid-area: 1 / 1;
+                font-size: 0.5em;
+                text-align: center;
+                z-index: 1;
+                padding: 0.2em 0;
+                color: black;
+            }
+
+            .bar {
+                grid-area: 1 / 1;
+                width: 10%;
+                background: $highlightBG;
+                align-self: stretch;
+            }
+        }
     }
 }
 

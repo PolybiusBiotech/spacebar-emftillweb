@@ -138,9 +138,8 @@ function set_note(note) {
 function not_connected_message() {
     updateText(linenote, notConnectedStatus);
     logo.style.backgroundImage = idleLogo;
-    /* Leave the line name up if present */
-    updateText(totalStock, "");
-    updateText(connectedStock, "");
+    connectedStock.classList.add("d-none");
+    totalStock.classList.add("d-none");
     updateText(product, "");
     updateText(price, "");
 }
@@ -165,10 +164,12 @@ function process_message(message) {
             show_logo();
             logo.style.backgroundImage = idleLogo;
             updateHTML(tastingNotes, "");
-            updateText(product, "");
+            updateText(product, "No product connected");
             updateText(price, "");
             updateHTML(linenote, m.note);
-            updateText(status, "No product connected");
+            connectedStock.classList.add("d-none");
+            totalStock.classList.add("d-none");
+
         } else {
             if (m.stockitem.stocktype.logo) {
                 logo.style.backgroundImage = `url(${m.stockitem.stocktype.logo})`;
@@ -196,16 +197,25 @@ function process_message(message) {
             }
             updateText(linenote, m.note);
 
-            let connectedStockData = m.stockitem;
-            let totalStockData = m.stockitem.stocktype;
+            // Parse JSON integers
+            let connectedStockRemaining = parseInt(m.stockitem.remaining);
+            let connectedStockSize = parseInt(m.stockitem.size);
+            let totalStockRemaining = parseInt(m.stockitem.stocktype.base_units_remaining);
+            let totalStockBought = parseInt(m.stockitem.stocktype.base_units_bought);
 
-            let connectedStockRemaining = parseInt(connectedStockData.remaining);
-            let connectedStockSize = parseInt(connectedStockData.size);
-            let totalStockRemaining = parseInt(totalStockData.base_units_remaining);
-            let totalStockBought = parseInt(totalStockData.base_units_bought);
+            // Label QS
+            let connectedStockLabel = connectedStock.querySelector(".label");
+            let totalStockLabel = totalStock.querySelector(".label");
 
-            updateText(connectedStock, `Connected: ${connectedStockRemaining} / ${connectedStockSize} ${connectedStockData.stocktype.base_unit_name}s`);
-            updateText(totalStock, `Total: ${totalStockRemaining} / ${totalStockBought} ${totalStockData.base_unit_name}s`);
+            // Update progress bars
+            connectedStock.querySelector(".bar").style.width = connectedStockRemaining > 0 ? `${(connectedStockRemaining / connectedStockSize) * 100}%` : "%";
+            totalStock.querySelector(".bar").style.width = totalStockBought > 0 ? `${(totalStockRemaining / totalStockBought) * 100}%` : "%";
+            updateText(connectedStockLabel, `Connected: ${connectedStockRemaining} / ${connectedStockSize} ${m.stockitem.stocktype.base_unit_name}s`);
+            updateText(totalStockLabel, `Total: ${totalStockRemaining} / ${totalStockBought} ${m.stockitem.stocktype.base_unit_name}s`);
+
+            // Display progress bars
+            connectedStock.classList.remove("d-none");
+            totalStock.classList.remove("d-none");
         }
     } else {
         /* Unknown message type */
