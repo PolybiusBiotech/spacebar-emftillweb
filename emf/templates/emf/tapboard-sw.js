@@ -1,5 +1,5 @@
 {% load static %}
-const VERSION = "v4";
+const VERSION = "v5";
 
 const CACHE_NAME = `tapboard-${VERSION}`;
 
@@ -16,7 +16,7 @@ const APP_STATIC_RESOURCES = [
     "{% static "emf/img/tapboard-menu-icon-white.svg" %}",
     "{% static "emf/img/tapboard-not-connected.svg" %}",
     "{% static "emf/img/unknown-brand.png" %}",
-    "{% static "emf/img/caution-icon.svg" %}",
+    "{% static "emf/img/alert-triangle.svg" %}",
 ];
 
 // On install, cache the static resources
