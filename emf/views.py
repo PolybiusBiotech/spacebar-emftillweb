@@ -258,8 +258,9 @@ def pricelist(request):
         content = ''
 
     with tillsession() as s:
-        products = s.query(StockType,
-                           StockType.remaining / StockType.total * 100.0)\
+        products = s\
+            .query(StockType,
+                   StockType.total_remaining / StockType.total * 100.0)\
             .join(Unit)\
             .join(Department)\
             .options(undefer(StockType.total_remaining))\
