@@ -114,6 +114,11 @@ def notify_stockline_change(id_str):
                 delete(f"stockline/{id}")
                 return
             publish(stockline_to_dict(sl))
+            # If the stockline is continuous and has a stocktype,
+            # publish the stocktype as well because it may just have
+            # been put on sale on the stockline
+            if sl.linetype == "continuous" and sl.stocktype:
+                publish(stocktype_to_dict(sl.stocktype))
 
 
 def notify_stocktype_change(id_str):
@@ -176,6 +181,10 @@ def notify_stockitem_change(id_str):
             # notifications.
             if si.stockline:
                 publish(stockline_to_dict(si.stockline))
+
+            # Updates to amounts remaining and stockline connections must
+            # also be published for the item's stocktype
+            publish(stocktype_to_dict(si.stocktype))
 
             publish_totals_by_unit()
 

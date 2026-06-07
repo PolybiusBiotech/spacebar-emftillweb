@@ -1,6 +1,6 @@
 from .tilldb import tillsession, on_tap
 import json
-from quicktill.models import StockType, Unit, Department
+from quicktill.models import StockType, StockItem, Unit, Department
 from quicktill.models import StockLine
 from sqlalchemy.orm import undefer, joinedload
 from django.conf import settings
@@ -21,12 +21,14 @@ def stocktype_query(s):
             .order_by(StockType.dept_id)\
             .order_by(StockType.manufacturer)\
             .order_by(StockType.name)\
-            .options(undefer('total'))\
-            .options(undefer('total_remaining'))\
+            .options(
+                undefer(StockType.total),
+                undefer(StockType.total_remaining),
+                joinedload(StockType.stocklines),
+                joinedload(StockType.items))
 
 
 # Views
-
 
 def departments(request):
     with tillsession() as s:
@@ -81,9 +83,10 @@ def dept(request, dept_id):
 def stocktype(request, stocktype_id):
     with tillsession() as s:
         stocktype = s.query(StockType)\
-                     .options(joinedload('unit'))\
-                     .options(undefer('total'))\
-                     .options(undefer('total_remaining'))\
+                     .options(
+                         joinedload(StockType.unit),
+                         undefer(StockType.total),
+                         undefer(StockType.total_remaining))\
                      .get(stocktype_id)
 
         if not stocktype:
@@ -107,12 +110,18 @@ def stocklines(request):
         q = s.query(StockLine)\
              .order_by(StockLine.location, StockLine.name)
         if not brief:
-            q = q.options(joinedload("stockonsale"),
-                          joinedload("stockonsale.stocktype"),
-                          joinedload("stockonsale.stocktype.meta"),
-                          undefer("stockonsale.remaining"),
-                          undefer("stockonsale.stocktype.total_remaining"),
-                          undefer("stockonsale.stocktype.total"))
+            sos = joinedload(StockLine.stockonsale)
+            st = sos.joinedload(StockItem.stocktype)
+            q = q.options(
+                sos,
+                st,
+                st.joinedload(StockType.meta),
+                sos.undefer(StockItem.remaining),
+                st.undefer(StockType.total_remaining),
+                st.undefer(StockType.total),
+                joinedload(StockLine.stocktype)
+                .joinedload(StockType.stocklines),
+            )
         if 'type' in request.GET:
             q = q.filter(StockLine.linetype.in_(request.GET.getlist('type')))
         if 'location' in request.GET:

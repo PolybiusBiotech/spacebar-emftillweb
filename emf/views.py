@@ -263,7 +263,8 @@ def pricelist(request):
                    StockType.total_remaining / StockType.total * 100.0)\
             .join(Unit)\
             .join(Department)\
-            .options(undefer(StockType.total_remaining))\
+            .options(undefer(StockType.total_remaining),
+                     undefer(StockType.total))\
             .order_by(Department.id, StockType.manufacturer, StockType.name)\
             .filter(StockType.total_remaining > 0.0)\
             .all()
