@@ -8,7 +8,6 @@ from django.contrib import messages
 from django.conf import settings
 
 from sqlalchemy.orm import joinedload
-from sqlalchemy.orm import undefer
 from sqlalchemy import func
 
 from decimal import Decimal
@@ -247,6 +246,7 @@ def frontpage(request):
                 "kegs": kegs,
                 "ciders": ciders,
                 "content": content,
+                "websocket_address": websocket_address(request),
             })
 
 
@@ -257,14 +257,14 @@ def pricelist(request):
     except emf.models.Page.DoesNotExist:
         content = ''
 
+    # We filter out stock that has all gone here. In the future, we
+    # may want to leave it in and filter it client-side based on live
+    # updates
     with tillsession() as s:
         products = s\
-            .query(StockType,
-                   StockType.total_remaining / StockType.total * 100.0)\
+            .query(StockType)\
             .join(Unit)\
             .join(Department)\
-            .options(undefer(StockType.total_remaining),
-                     undefer(StockType.total))\
             .order_by(Department.id, StockType.manufacturer, StockType.name)\
             .filter(StockType.total_remaining > 0.0)\
             .all()
@@ -274,6 +274,7 @@ def pricelist(request):
             context={
                 "content": content,
                 "products": products,
+                "websocket_address": websocket_address(request),
             })
 
 

@@ -18,7 +18,10 @@ LOGO_DIR.mkdir(parents=True, exist_ok=True)
 
 robot_arms = 'Robot Arms'
 cybar = 'Cybar'
+secret_bar = 'Secret Bar'
 
+# XXX the secret bar needs adding to this list. Could this be a
+# database table in the django database?
 locations = {
     'Bar': robot_arms,
     'Fridge': robot_arms,

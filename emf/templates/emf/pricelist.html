@@ -1,6 +1,10 @@
 {% extends "emf/base.html" %}
 {% load static %}
-{% block title %}EMF Camp Bars — Price List{% endblock %}
+{% block title %}EMF Bar Prices{% endblock %}
+
+{% block jquery %}
+<script src="{% static "emf/js/tillwebclient.js" %}"></script>
+{% endblock %}
 
 {% block heading %}
   <a class="logo" href="/"><img src="/static/emf/img/logo.svg"></a>
@@ -11,13 +15,46 @@
 {{ content }}
 
 <div class="alert-block warning">
-  <strong>Note:</strong> Not all draught beers and ciders are on sale at the same
-  time. See <a href="{% url "frontpage" %}">the front page</a> for the
-  current selection.</div>
+  <strong>Note:</strong> Not all draught beers and ciders are on sale
+  at the same time. The places you can buy each type at the moment are
+  shown below. <a href="{% url "frontpage" %}">The front page</a> also
+  shows the current selection.
+</div>
 
+<template id="stock_lastfew">
+  <div class="stock">
+    <span class="orb lastfew" title="Last few"></span>
+    <span class="text">Last few</span>
+  </div>
+</template>
 
-<!-- sde1000: remove the woloc class when you add the locations column -->
-<div class="products woloc">
+<template id="stock_low">
+  <div class="stock">
+    <span class="orb low" title="Low"></span>
+    <span class="text">Low</span>
+  </div>
+</template>
+
+<template id="stock_plenty">
+  <div class="stock">
+    <span class="orb plenty" title="Plenty"></span>
+    <span class="text">Plenty</span>
+  </div>
+</template>
+
+<template id="location_robotarms">
+  <span class="location robotarms">Robot Arms</span>
+</template>
+
+<template id="location_cybar">
+  <span class="location cybar">Cybar</span>
+</template>
+
+<template id="location_secretbar">
+  <span class="location secretbar">Secret bar</span>
+</template>
+
+<div class="products">
   <div class="product head">
     <div class="name">Name</div>
     <div class="abv">ABV</div>
@@ -26,36 +63,97 @@
     <div class="stock">Stock</div>
   </div>
 
-  {% for p, remain_pct in products %}
+  {% for p in products %}
     {% ifchanged p.department.description %}
       <h2>{{p.department.description}}</h2>
     {% endifchanged %}
-    <div class="product">
+    <div class="product" data-stocktypekey="stocktype/{{p.id}}">
       <div class="name">{{ p.manufacturer }} {{ p.name }}</div>
       <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
       <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
-
-      <!-- For sde1000's future features -->
-      <div class="locations">
-        <!-- <span class="location cybar">Cybar</span> -->
-        <!-- <span class="location robotarms">Robot Arms</span> -->
-      </div>
-
-      <div class="stock">
-        {% if remain_pct < 5.0 %}
-          <span class="orb lastfew" title="Last few"></span>
-          <span class="text">Last few</span>
-        {% elif remain_pct < 15.0 %}
-          <span class="orb low" title="Low"></span>
-          <span class="text">Low</span>
-        {% else %}
-          <span class="orb plenty" title="Plenty"></span>
-          <span class="text">Plenty</span>
-        {% endif %}
-      </div>
-
+      <div class="locations"></div>
+      <div class="stock"></div>
     </div>
   {% endfor %}
 </div>
 
+<div id="connectionStatus" class="connection-status">
+  Connection lost
+</div>
+
+<script type="text/javascript">
+  function abv_to_string(abv) {
+      if (abv === null) {
+	  return '';
+      }
+      return `${abv}%`;
+  }
+
+  function get_template(name) {
+      return document.getElementById(name).content.children[0];
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+      const connectionStatus = document.getElementById("connectionStatus");
+      const client = TillWebClient("{{websocket_address}}", false);
+      client.onConnect(function () {
+	  connectionStatus.classList.remove("disconnected");
+	  connectionStatus.classList.add("connected");
+      });
+      client.onDisconnect(function () {
+	  connectionStatus.classList.remove("connected");
+	  connectionStatus.classList.add("disconnected");
+      });
+
+      const stocktypes = document.querySelectorAll("[data-stocktypekey]");
+      const lastfew = get_template("stock_lastfew");
+      const low = get_template("stock_low");
+      const plenty = get_template("stock_plenty");
+      const loc_robotarms = get_template("location_robotarms");
+      const loc_cybar = get_template("location_cybar");
+      const loc_secretbar = get_template("location_secretbar");
+
+      stocktypes.forEach(function (product) {
+	  const key = product.dataset.stocktypekey;
+	  client.onKey(key, function (message) {
+	      const elems = product.children;
+	      const stock = elems[4];
+	      updateText(elems[0], `${message.manufacturer} ${message.name}`);
+	      updateText(elems[1], abv_to_string(message.abv));
+	      updateText(elems[2], `£${message.price}/${message.sale_unit_name}`);
+
+	      const locnames = new Set();
+	      for (const stockline of message.stocklines) {
+		  locnames.add(stockline.location_display);
+	      }
+	      const locations = elems[3].cloneNode();
+	      if (locnames.has("Robot Arms")) {
+		  locations.appendChild(document.importNode(
+		      loc_robotarms, true));
+	      }
+	      if (locnames.has("Cybar")) {
+		  locations.appendChild(document.importNode(
+		      loc_cybar, true));
+	      }
+	      if (locnames.has("Secret Bar")) {
+		  locations.appendChild(document.importNode(
+		      loc_secretbar, true));
+	      }
+	      updateNode(elems[3], locations);
+
+	      const remain_pct = (
+		  message.base_units_remaining / message.base_units_bought
+		      * 100);
+
+	      if (remain_pct < 5.0) {
+		  updateNode(stock, lastfew);
+	      } else if (remain_pct < 15.0) {
+		  updateNode(stock, low);
+	      } else {
+		  updateNode(stock, plenty);
+	      }
+	  });
+      });
+  });
+</script>
 {% endblock %}

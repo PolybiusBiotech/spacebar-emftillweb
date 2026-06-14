@@ -213,6 +213,20 @@ header {
     }
 }
 
+.connection-status {
+    background-color: yellow;
+    color: black;
+    border: 1px solid black;
+    position: fixed;
+    padding: 20px;
+    bottom: 0px;
+    right: 0px;
+    display: none;
+    &.disconnected {
+	display: block;
+    }
+}
+
 @media screen and ( max-width: 76em ) {
     body {
         margin: 2em;
@@ -296,9 +310,11 @@ header {
                 line-height: 1.75em;
             }
 
-            .locations::before {
-                content: "Available at: ";
-            }
+            .locations:not(:empty) {
+		&::before {
+                    content: "Available at: ";
+		}
+	    }
 
             .abv:not(:empty) {
                 &::before {
