@@ -9,6 +9,7 @@ import qrcode
 
 import sqlalchemy
 from django.conf import settings
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from quicktill.models import (
@@ -134,6 +135,26 @@ class InsufficientStock(KioskOrderError):
 
 class InvalidQuantity(KioskOrderError):
     code = "invalid-quantity"
+
+
+class TooManyItems(KioskOrderError):
+    status_code = 400
+    code = "too-many-items"
+
+
+class RateLimited(KioskOrderError):
+    status_code = 429
+    code = "rate-limited"
+
+    def __init__(self, message, *, retry_after=None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+    def as_dict(self):
+        d = super().as_dict()
+        if self.retry_after is not None:
+            d["retry_after"] = self.retry_after
+        return d
 
 
 class InvalidStockLine(KioskOrderError):
@@ -314,7 +335,7 @@ def _fallback_log_user(session, user):
 
 
 def place_order(session, *, location, items, source="kiosk", user=None,
-                now=None, timeout=default_timeout):
+                now=None, timeout=default_timeout, max_items=None):
     current_session = Session.current(session)
     if current_session is None:
         raise NoActiveSession("No till session is active.")
@@ -327,6 +348,13 @@ def place_order(session, *, location, items, source="kiosk", user=None,
         stockline_id = _read_stockline_id(item.get("stockline_id"))
         qty = _read_qty(item.get("qty", 1))
         quantities[stockline_id] = quantities.get(stockline_id, 0) + qty
+
+    if max_items is not None:
+        total_qty = sum(quantities.values())
+        if total_qty > max_items:
+            raise TooManyItems(
+                f"Orders via this token are limited to {max_items} item(s). "
+                f"Requested {total_qty}.")
 
     plans = []
     for stockline_id, qty in sorted(quantities.items()):
@@ -506,12 +534,21 @@ def _bearer_token(request):
     return token
 
 
+def _client_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
 def _normalise_token_entry(entry):
     if isinstance(entry, str):
         return {
             "locations": [entry],
             "source": "kiosk",
             "timeout": default_timeout,
+            "max_items": None,
+            "rate_limit_seconds": None,
         }
     locations = entry.get("locations", entry.get("location", []))
     if isinstance(locations, str):
@@ -519,11 +556,17 @@ def _normalise_token_entry(entry):
     raw_timeout = entry.get("timeout")
     timeout = (datetime.timedelta(seconds=int(raw_timeout))
                if raw_timeout is not None else default_timeout)
+    raw_rate = entry.get("rate_limit")
+    rate_limit_seconds = int(raw_rate) if raw_rate is not None else None
+    raw_max = entry.get("max_items")
+    max_items = int(raw_max) if raw_max is not None else None
     return {
         "locations": list(locations),
         "source": entry.get("source", "kiosk"),
         "user": entry.get("user"),
         "timeout": timeout,
+        "max_items": max_items,
+        "rate_limit_seconds": rate_limit_seconds,
     }
 
 
@@ -599,6 +642,19 @@ def orders(request):
     if response:
         return response
 
+    rate_limit_seconds = auth.get("rate_limit_seconds")
+    if rate_limit_seconds:
+        ip = _client_ip(request)
+        cache_key = f"order-ratelimit:{auth['source']}:{ip}"
+        if cache.get(cache_key):
+            retry_after = rate_limit_seconds
+            err = RateLimited(
+                f"Too many orders. Try again in {retry_after} seconds.",
+                retry_after=retry_after)
+            resp = JsonResponse(err.as_dict(), status=err.status_code)
+            resp["Retry-After"] = str(retry_after)
+            return resp
+
     with tillsession() as s:
         try:
             user = _auth_user(s, auth.get("user"))
@@ -613,11 +669,13 @@ def orders(request):
                 items=payload.get("items", []),
                 source=auth["source"],
                 user=user,
-                timeout=auth["timeout"])
+                timeout=auth["timeout"],
+                max_items=auth.get("max_items"))
             result["expired_orders"] = expired
             s.commit()
-            return JsonResponse(
-                result, status=201 if result["created"] else 200)
+            if rate_limit_seconds:
+                cache.set(cache_key, True, rate_limit_seconds)
+            return JsonResponse(result, status=201)
         except KioskOrderError as e:
             s.rollback()
             return JsonResponse(e.as_dict(), status=e.status_code)
