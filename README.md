@@ -36,10 +36,12 @@ currency_symbol = "£"
 site_name = "EMF Bars"
 
 [kiosk.tokens.test-token]
-locations = ["Kiosk"]
-order_prefix = "Kiosk"
+locations = ["spacebar"]
+order_prefix = "SB"
 source = "kiosk-test"
 ```
+
+The `locations` value must exactly match the `KIOSK_LOCATION` env var on the kiosk, and must match the location name assigned to stocklines in the database. `order_prefix` is the label written into order metadata and shown on the OMS board (e.g. `SB 0042`).
 
 The optional `kiosk.tokens` section configures bearer tokens for the
 private kiosk order API.  Each token is scoped to one or more till
@@ -75,3 +77,22 @@ necessary for the quicktill web interface project to run in
 The SCSS files in `emf/static/emf/scss/` can be converted to CSS by
 running `npm run emfsass`, and you can start a process that watches
 the SCSS files for changes by running `npm run emfsass-watch`.
+
+
+Seeding a fresh database
+------------------------
+
+If you are not restoring from a dump, you need to seed the `emfcamp` database with test data before kiosk orders will work. **Run `syncdb` first** — it populates `transcodes`, `stockremove`, and other reference tables:
+
+```sh
+poetry run runtill -d dbname=emfcamp syncdb
+```
+
+Then seed test stock. Key constraints to be aware of:
+
+- `Department` constructor kwarg is `id=`, **not** `dept=` (the Python attribute is `id`; the DB column is `dept`).
+- Continuous `StockLine` rows must have **no** `dept_id`, `capacity`, or `pullthru` — those are only valid for `display`/`regular` linetypes.
+- `StockItem` rows for a continuous line must have `stocklineid=None` and `checked=True`. If `stocklineid` is set, `StockType.stockonsale()` returns empty and the kiosk sees no stock.
+- An active `Session` row (with `starttime` and `date`) is required before any order can be placed. Without it, the kiosk gets `no-active-session`.
+
+After seeding, set a price for your test stocktype in the tillweb admin (Stocktypes → set selling price for location `spacebar`), then run `poetry run tillweb migrate` to apply the `KioskOrderRef` migration if you haven't already.
