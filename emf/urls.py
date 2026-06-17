@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic.base import RedirectView
 from emf import views
 from emf import api
+from emf import kiosk
 
 urls = [
     path('', views.frontpage, name="frontpage"),
@@ -44,4 +45,7 @@ urls = [
     path('api/stocklines.json', api.stocklines, name="api-stocklines"),
     path('api/stockline/<int:stockline_id>/set-note/', api.stockline_set_note,
          name="api-stockline-set-note"),
+    path('api/kiosk/orders.json', kiosk.orders, name="api-kiosk-orders"),
+    path('api/kiosk/orders/expire.json', kiosk.expire,
+         name="api-kiosk-expire-orders"),
 ]

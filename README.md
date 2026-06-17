@@ -34,7 +34,18 @@ mode = "devel"
 database_name = "emfcamp"
 currency_symbol = "£"
 site_name = "EMF Bars"
+
+[kiosk.tokens.test-token]
+locations = ["Kiosk"]
+order_prefix = "Kiosk"
+source = "kiosk-test"
 ```
+
+The optional `kiosk.tokens` section configures bearer tokens for the
+private kiosk order API.  Each token is scoped to one or more till
+stockline locations.  The kiosk order API only creates unpaid saved
+orders; kiosk clients should use the public stockline API for the
+product list and live stock updates.
 
 Development
 -----------
