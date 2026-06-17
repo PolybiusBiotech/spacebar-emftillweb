@@ -35,10 +35,10 @@ database_name = "emfcamp"
 currency_symbol = "£"
 site_name = "EMF Bars"
 
-[kiosk.tokens.spacebar-kiosk-1]
+[kiosk.tokens.my-dev-token]   # section key IS the bearer token — use random string in prod
 locations = ["Spacebar"]
 order_prefix = "SB"
-source = "spacebar-kiosk-1"
+source = "spacebar-kiosk-1"  # human-readable label for audit logs
 user = "kiosk"
 ```
 
