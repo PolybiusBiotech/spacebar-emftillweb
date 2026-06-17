@@ -552,6 +552,9 @@ def _orders_get(request):
     location = request.GET.get("location")
     if not location:
         return _json_error(400, "missing-location", "Supply ?location=<name>.")
+    auth, response = _authenticate(request, location)
+    if response:
+        return response
     prefix = request.GET.get("prefix") or None
     with tillsession() as s:
         try:
