@@ -1,34 +1,85 @@
-{% extends "emf/base.html" %}
 {% load static %}
-{% block title %}EMF Camp Bars - Cellar status{% endblock %}
-{% block jquery %}
-<script>
-  const websocket_address = "{{websocket_address}}";
-  const sl_location = "{{location}}";
-</script>
-<script src="{% static "emf/js/cellarboard.js" %}" defer></script>
-{% endblock %}
-{% block heading %}
-<h1>{{location}} Cellar Status</h1>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>EMF Bars — {{location}} Cellar statis</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="STYLESHEET" type="text/css" href="{% static "emf/css/display.css" %}">
+    <script type="module" src="{% static "emf/js/clock.js" %}"></script>
+    <script src="{% static "emf/js/tillwebclient.js" %}"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+	  const lineTable = document.getElementById("lineTable");
+	  const connStatus = document.getElementById("connStatus");
 
-{% block content %}
-<table class="large">
-  <colgroup>
-    <col width="15%" />
-    <col width="45%" />
-    <col width="15%" />
-    <col width="25%" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th scope="col">Line</th>
-      <th scope="col">Product</th>
-      <th scope="col">Remaining</th>
-      <th scope="col">Notes</th>
-    </tr>
-  </thead>
-  <tbody id="lineTable">
-  </tbody>
-</table>
-{% endblock %}
+	  (async function setup() {
+	      const response = await fetch(
+		  "/api/stocklines.json?type=regular&location={{location}}");
+	      const stocklines = await response.json();
+
+	      const client = TillWebClient("{{websocket_address}}");
+	      client.onConnect(function () {
+		  updateText(connStatus, "Connected");
+	      });
+	      client.onDisconnect(function () {
+		  updateText(connStatus, "Connection lost");
+	      });
+
+	      for (const stockline of stocklines.stocklines) {
+		  const row = document.createElement('tr');
+		  row.innerHTML = `<td>${stockline.name}</td><td></td><td></td><td></td>`;
+		  const name = row.children[0];
+		  const product = row.children[1];
+		  const remaining = row.children[2];
+		  const note = row.children[3];
+		  lineTable.appendChild(row);
+		  client.onKey(stockline.key, function (m) {
+		      if (m.type == "stockline") {
+			  updateText(name, m.name);
+			  updateText(note, m.note);
+			  if (m.stockitem === null) {
+			      updateText(product, "");
+			      updateText(remaining, "");
+			  } else {
+			      updateText(product, `${m.stockitem.id}: ${m.stockitem.stocktype.fullname}`);
+			      updateText(remaining, `${m.stockitem.remaining}/${m.stockitem.size} ${m.stockitem.stocktype.base_unit_name}s`);
+			  }
+		      }
+		  });
+	      }
+	  })();
+      });
+    </script>
+  </head>
+  <body>
+    <div id="container">
+      <header>
+        <div id="logo"><img src="{% static "emf/img/logo.svg" %}" width="400"></div>
+        <h1 id="title">{{location}} Cellar Status — <span id="connStatus">Connecting</span></h1>
+        <div id="clock"></div>
+      </header>
+      <main id="content">
+	<table class="large">
+	  <colgroup>
+	    <col width="15%" />
+	    <col width="45%" />
+	    <col width="15%" />
+	    <col width="25%" />
+	  </colgroup>
+	  <thead>
+	    <tr>
+	      <th scope="col">Line</th>
+	      <th scope="col">Product</th>
+	      <th scope="col">Remaining</th>
+	      <th scope="col">Notes</th>
+	    </tr>
+	  </thead>
+	  <tbody id="lineTable">
+	  </tbody>
+	</table>
+
+      </main>
+    </div>
+  </body>
+</html>
