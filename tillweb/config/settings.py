@@ -255,3 +255,4 @@ TILLWEB_LOGIN_REQUIRED = True
 TILLWEB_DEFAULT_ACCESS = "M"
 TILLWEB_MONEY_SYMBOL = till_config.get("currency_symbol", "")
 EMF_KIOSK_ORDER_TOKENS = kiosk_config.get("tokens", {})
+EMF_KIOSK_BARCODE_SECRET = kiosk_config.get("barcode_secret", "")

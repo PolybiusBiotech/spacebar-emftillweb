@@ -1,4 +1,6 @@
 import datetime
+import hashlib
+import hmac as _hmac
 import json
 from decimal import Decimal
 from hmac import compare_digest
@@ -27,6 +29,27 @@ from .tilldb import tillsession
 
 order_meta_key = "emf:kiosk-order"
 default_timeout = datetime.timedelta(minutes=15)
+barcode_prefix = "KIOSK:"
+
+
+def _barcode_secret():
+    return getattr(settings, "EMF_KIOSK_BARCODE_SECRET", "")
+
+
+def _checkdigits(trans_id):
+    secret = _barcode_secret().encode()
+    msg = str(trans_id).encode()
+    h = _hmac.new(secret, msg, hashlib.sha1) if secret else hashlib.sha1(msg)
+    return str(int(h.hexdigest(), 16))[-3:]
+
+
+def _order_barcode(trans_id):
+    return f"{barcode_prefix}{trans_id}{_checkdigits(trans_id)}"
+
+
+def _is_soft(department):
+    """True when the department has a capped ABV ≤ 0.5% — no age check needed."""
+    return department.maxabv is not None and department.maxabv <= Decimal("0.5")
 
 
 class KioskOrderError(Exception):
@@ -243,22 +266,20 @@ def _order_lines(trans):
 def _order_response(trans, meta, *, created):
     lines, total = _order_lines(trans)
     order_ref = meta["order_ref"]
-    order_prefix = meta["order_prefix"]
     return {
         "order_ref": order_ref,
-        "order_name": f"{order_prefix} {order_ref}",
-        "order_prefix": order_prefix,
+        "barcode": _order_barcode(trans.id),
         "location": meta["location"],
         "transaction_id": trans.id,
         "created": created,
         "created_at": meta["created_at"],
         "expires_at": meta["expires_at"],
-        "idempotency_key": meta.get("idempotency_key"),
+        "soft_only": meta.get("soft_only", False),
         "status": "accepted",
         "total": _money(total),
         "lines": lines,
         "slip": {
-            "title": f"{order_prefix} order {order_ref}",
+            "title": f"Order {order_ref}",
             "created_at": meta["created_at"],
             "expires_at": meta["expires_at"],
             "unpaid": True,
@@ -267,25 +288,6 @@ def _order_response(trans, meta, *, created):
         },
     }
 
-
-def _existing_order(session, idempotency_key):
-    if not idempotency_key:
-        return None, None
-    rows = session.query(TransactionMeta)\
-        .filter(TransactionMeta.key == order_meta_key)\
-        .options(joinedload(TransactionMeta.transaction))\
-        .all()
-    for row in rows:
-        meta = _read_meta(row.transaction)
-        if meta and meta.get("idempotency_key") == idempotency_key:
-            return row.transaction, meta
-    return None, None
-
-
-def _new_order_ref(_session):
-    from .models import KioskOrderRef
-    ref = KioskOrderRef.objects.create()
-    return f"{ref.id:04d}"
 
 
 def _fallback_log_user(session, user):
@@ -297,13 +299,8 @@ def _fallback_log_user(session, user):
         .first() or session.query(User).order_by(User.id).first()
 
 
-def place_order(session, *, location, items, order_prefix="Kiosk",
-                source="kiosk", idempotency_key=None, user=None, now=None,
-                timeout=default_timeout):
-    existing, meta = _existing_order(session, idempotency_key)
-    if existing:
-        return _order_response(existing, meta, created=False)
-
+def place_order(session, *, location, items, source="kiosk", user=None,
+                now=None, timeout=default_timeout):
     current_session = Session.current(session)
     if current_session is None:
         raise NoActiveSession("No till session is active.")
@@ -322,31 +319,33 @@ def place_order(session, *, location, items, order_prefix="Kiosk",
         line = _load_line(session, stockline_id, location)
         plans.append(_plan_sale(line, qty))
 
+    soft_only = all(_is_soft(p["stocktype"].department) for p in plans)
+
     now = now or datetime.datetime.now()
     expires_at = now + timeout
-    order_ref = _new_order_ref(session)
-    order_name = f"{order_prefix} {order_ref}"
-    meta = {
-        "order_ref": order_ref,
-        "order_prefix": order_prefix,
-        "location": location,
-        "created_at": _timestamp(now),
-        "expires_at": _timestamp(expires_at),
-    }
-    if idempotency_key:
-        meta["idempotency_key"] = idempotency_key
 
-    trans = Transaction(session=current_session, notes=order_name)
+    trans = Transaction(session=current_session, notes="Kiosk order")
     session.add(trans)
     session.flush()
 
+    order_ref = str(trans.id)
+    meta = {
+        "order_ref": order_ref,
+        "location": location,
+        "source": source,
+        "created_at": _timestamp(now),
+        "expires_at": _timestamp(expires_at),
+        "soft_only": soft_only,
+    }
+
+    trans.notes = f"Kiosk order {order_ref}"
     session.add(Transline(
         transaction=trans,
         items=1,
         amount=zero,
         department=plans[0]["stocktype"].department,
         transcode='S',
-        text=f"{order_prefix} order {order_ref}:",
+        text=f"Kiosk order {order_ref}:",
         user=user,
         source=source,
         protected=True))
@@ -408,6 +407,9 @@ def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
             continue
         if trans.payments:
             continue
+        if trans.user is not None:
+            # Transaction is active in a register — skip and retry next pass.
+            continue
 
         expired.append({
             "transaction_id": trans.id,
@@ -426,13 +428,13 @@ def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
     return expired
 
 
-def list_orders(session, *, location, prefix=None):
-    """Return active kiosk orders for a location and order prefix.
+def list_orders(session, *, location):
+    """Return active kiosk orders for a location.
 
     Returns all unpaid orders (closed=False) plus all paid orders
-    (closed=True, any session) that match the given prefix. Scoping by
-    prefix rather than session means paid orders survive a till session
-    restart during service. Expired unpaid orders are already deleted by
+    (closed=True, any session) for the location. Scoping by location
+    rather than session means paid orders survive a till session restart
+    during service. Expired unpaid orders are already deleted by
     expire_orders, so nothing stale leaks in from the unpaid side.
     """
     rows = session.query(TransactionMeta)\
@@ -454,15 +456,13 @@ def list_orders(session, *, location, prefix=None):
             continue
         if meta.get("location") != location:
             continue
-        if prefix is not None and meta.get("order_prefix") != prefix:
-            continue
         lines, total = _order_lines(trans)
         orders.append({
             "order_ref": meta["order_ref"],
-            "order_name": f"{meta.get('order_prefix', 'Kiosk')} {meta['order_ref']}",
             "transaction_id": trans.id,
             "created_at": meta.get("created_at"),
             "expires_at": meta.get("expires_at"),
+            "soft_only": meta.get("soft_only", False),
             "total": _money(total),
             "paid": bool(trans.closed),
             "lines": lines,
@@ -496,7 +496,6 @@ def _normalise_token_entry(entry):
     if isinstance(entry, str):
         return {
             "locations": [entry],
-            "order_prefix": "Kiosk",
             "source": "kiosk",
         }
     locations = entry.get("locations", entry.get("location", []))
@@ -504,7 +503,6 @@ def _normalise_token_entry(entry):
         locations = [locations]
     return {
         "locations": list(locations),
-        "order_prefix": entry.get("order_prefix", "Kiosk"),
         "source": entry.get("source", "kiosk"),
         "user": entry.get("user"),
     }
@@ -555,10 +553,9 @@ def _orders_get(request):
     auth, response = _authenticate(request, location)
     if response:
         return response
-    prefix = request.GET.get("prefix") or None
     with tillsession() as s:
         try:
-            orders = list_orders(s, location=location, prefix=prefix)
+            orders = list_orders(s, location=location)
             return JsonResponse({"location": location, "orders": orders})
         except sqlalchemy.exc.OperationalError as e:
             return _json_error(503, "database-error", str(e))
@@ -595,9 +592,7 @@ def orders(request):
                 s,
                 location=location,
                 items=payload.get("items", []),
-                order_prefix=auth["order_prefix"],
                 source=auth["source"],
-                idempotency_key=payload.get("idempotency_key"),
                 user=user)
             result["expired_orders"] = expired
             s.commit()

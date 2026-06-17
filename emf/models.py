@@ -155,9 +155,3 @@ class DisplayPage(models.Model):
         }
 
 
-class KioskOrderRef(models.Model):
-    """Auto-increment counter for kiosk order refs.
-
-    Stored in the Django-managed (SQLite) database, independent of the
-    quicktill PostgreSQL instance so that no database sequence is required.
-    """
