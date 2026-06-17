@@ -5,6 +5,8 @@ import json
 from decimal import Decimal
 from hmac import compare_digest
 
+import qrcode
+
 import sqlalchemy
 from django.conf import settings
 from django.http import JsonResponse
@@ -45,6 +47,16 @@ def _checkdigits(trans_id):
 
 def _order_barcode(trans_id):
     return f"{barcode_prefix}{trans_id}{_checkdigits(trans_id)}"
+
+
+def _qr_rows(data):
+    """Return QR code as list of '010...' strings, one per row."""
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M,
+                       box_size=1, border=1)
+    qr.add_data(data)
+    qr.make(fit=True)
+    matrix = qr.get_matrix()
+    return ["".join("1" if cell else "0" for cell in row) for row in matrix]
 
 
 def _is_soft(department):
@@ -266,9 +278,11 @@ def _order_lines(trans):
 def _order_response(trans, meta, *, created):
     lines, total = _order_lines(trans)
     order_ref = meta["order_ref"]
+    barcode = _order_barcode(trans.id)
     return {
         "order_ref": order_ref,
-        "barcode": _order_barcode(trans.id),
+        "barcode": barcode,
+        "qr_rows": _qr_rows(barcode),
         "location": meta["location"],
         "transaction_id": trans.id,
         "created": created,
@@ -497,14 +511,19 @@ def _normalise_token_entry(entry):
         return {
             "locations": [entry],
             "source": "kiosk",
+            "timeout": default_timeout,
         }
     locations = entry.get("locations", entry.get("location", []))
     if isinstance(locations, str):
         locations = [locations]
+    raw_timeout = entry.get("timeout")
+    timeout = (datetime.timedelta(seconds=int(raw_timeout))
+               if raw_timeout is not None else default_timeout)
     return {
         "locations": list(locations),
         "source": entry.get("source", "kiosk"),
         "user": entry.get("user"),
+        "timeout": timeout,
     }
 
 
@@ -593,7 +612,8 @@ def orders(request):
                 location=location,
                 items=payload.get("items", []),
                 source=auth["source"],
-                user=user)
+                user=user,
+                timeout=auth["timeout"])
             result["expired_orders"] = expired
             s.commit()
             return JsonResponse(

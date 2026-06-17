@@ -18,6 +18,7 @@ dependencies = [
     "sdnotify",
     "websockets",
     "quicktill[tillweb] (>=26.7)",  # for production
+    "qrcode (>=7.0)",
     # "quicktill[tillweb] @ file:///home/steve/quicktill",  # for development
 ]
 
