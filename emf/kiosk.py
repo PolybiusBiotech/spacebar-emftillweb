@@ -4,7 +4,6 @@ from decimal import Decimal
 from hmac import compare_digest
 
 import sqlalchemy
-from sqlalchemy import text
 from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -283,9 +282,10 @@ def _existing_order(session, idempotency_key):
     return None, None
 
 
-def _new_order_ref(session):
-    n = session.execute(text("SELECT nextval('kioskorder_seq')")).scalar()
-    return f"{n:04d}"
+def _new_order_ref(_session):
+    from .models import KioskOrderRef
+    ref = KioskOrderRef.objects.create()
+    return f"{ref.id:04d}"
 
 
 def _fallback_log_user(session, user):
