@@ -49,4 +49,8 @@ urls = [
          name="api-kiosk-cancel-order"),
     path('api/kiosk/orders/expire.json', order_client.expire,
          name="api-kiosk-expire-orders"),
+    path('api/kiosk/orders/<str:order_ref>/collect', order_client.collect,
+         name="api-kiosk-collect-order"),
+    path('api/kiosk/orders/<str:order_ref>/id-reject', order_client.reject,
+         name="api-kiosk-reject-order"),
 ]

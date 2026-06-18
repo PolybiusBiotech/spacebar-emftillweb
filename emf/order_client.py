@@ -14,6 +14,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from quicktill.models import (
     LogEntry,
+    RefusalsLog,
     Session,
     StockLine,
     StockOut,
@@ -487,6 +488,49 @@ def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
     return expired
 
 
+def mark_collected(session, *, order_ref, location, source="kiosk", user=None):
+    """Mark a kiosk order as collected — removes it from future poll results."""
+    trans = session.get(Transaction, int(order_ref))
+    if trans is None:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    meta = _read_meta(trans)
+    if meta is None or meta.get("location") != location:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    if meta.get("collected"):
+        return
+    meta["collected"] = True
+    _set_meta(trans, meta)
+    loguser = _fallback_log_user(session, user)
+    if loguser:
+        session.add(LogEntry(
+            source=source,
+            loguser=loguser,
+            description=f"Kiosk order {order_ref} marked collected"))
+    session.flush()
+
+
+def mark_rejected(session, *, order_ref, location, source="kiosk", user=None,
+                  terminal="kiosk"):
+    """Mark a kiosk order as ID-rejected — blocks re-scan and logs to refusals."""
+    trans = session.get(Transaction, int(order_ref))
+    if trans is None:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    meta = _read_meta(trans)
+    if meta is None or meta.get("location") != location:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    if meta.get("rejected"):
+        return
+    meta["rejected"] = True
+    _set_meta(trans, meta)
+    loguser = _fallback_log_user(session, user)
+    if loguser:
+        session.add(RefusalsLog(
+            user=loguser,
+            terminal=terminal,
+            details=f"ID rejected via kiosk (order {order_ref})"))
+    session.flush()
+
+
 def list_orders(session, *, location):
     """Return active kiosk orders for a location.
 
@@ -515,9 +559,12 @@ def list_orders(session, *, location):
             continue
         if meta.get("location") != location:
             continue
+        if meta.get("collected"):
+            continue
         lines, total = _order_lines(trans)
         orders.append({
             "order_ref": meta["order_ref"],
+            "order_name": meta["order_ref"],
             "transaction_id": trans.id,
             "created_at": meta.get("created_at"),
             "expires_at": meta.get("expires_at"),
@@ -817,3 +864,68 @@ def expire(request):
             "location": location,
             "expired_orders": expired,
         })
+
+
+@csrf_exempt
+def collect(request, order_ref):
+    if request.method != "POST":
+        return _json_error(405, "method-not-allowed", "Use POST.")
+
+    auth, response = _authenticate_token_only(request)
+    if response:
+        return response
+
+    location = auth.get("locations", [None])[0]
+    if not location:
+        return _json_error(400, "missing-location", "Token has no location.")
+
+    with tillsession() as s:
+        try:
+            user = _auth_user(s, auth.get("user"))
+            mark_collected(
+                s,
+                order_ref=order_ref,
+                location=location,
+                source=auth["source"],
+                user=user)
+            s.commit()
+            return JsonResponse({"ok": True, "order_ref": order_ref})
+        except KioskOrderError as e:
+            s.rollback()
+            return JsonResponse(e.as_dict(), status=e.status_code)
+        except (ValueError, sqlalchemy.exc.OperationalError) as e:
+            s.rollback()
+            return _json_error(400, "bad-request", str(e))
+
+
+@csrf_exempt
+def reject(request, order_ref):
+    if request.method != "POST":
+        return _json_error(405, "method-not-allowed", "Use POST.")
+
+    auth, response = _authenticate_token_only(request)
+    if response:
+        return response
+
+    location = auth.get("locations", [None])[0]
+    if not location:
+        return _json_error(400, "missing-location", "Token has no location.")
+
+    with tillsession() as s:
+        try:
+            user = _auth_user(s, auth.get("user"))
+            mark_rejected(
+                s,
+                order_ref=order_ref,
+                location=location,
+                source=auth["source"],
+                user=user,
+                terminal=auth["source"])
+            s.commit()
+            return JsonResponse({"ok": True, "order_ref": order_ref})
+        except KioskOrderError as e:
+            s.rollback()
+            return JsonResponse(e.as_dict(), status=e.status_code)
+        except (ValueError, sqlalchemy.exc.OperationalError) as e:
+            s.rollback()
+            return _json_error(400, "bad-request", str(e))
