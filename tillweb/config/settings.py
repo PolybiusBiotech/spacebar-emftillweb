@@ -28,7 +28,7 @@ front_page_config = config['front-page']
 till_config = config['till']
 oidc_config = config['oidc']
 xero_config = config['xero']
-kiosk_config = config['kiosk']
+kiosk_config = config.get('kiosk', {})
 
 # Simple switch to disable OIDC configuration without deleting it from
 # the configuration file
