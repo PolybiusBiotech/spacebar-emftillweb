@@ -117,7 +117,6 @@ Orders recalled at the till are handled by the
 |---|---|---|
 | `GET /api/stocklines.json?location=<name>` | None | Product list and live stock levels |
 | `GET /api/kiosk/orders.json?location=<name>` | None | List live kiosk orders (OMS poll) |
-| `GET /api/orders?order=<ref>` | None | Single order status (badge status poll) — returns `{ order: { order_ref, state } }` |
 | `POST /api/kiosk/orders.json` | Bearer token | Place a new kiosk order — returns `{ order_ref, barcode, qr_rows }` |
 | `POST /api/kiosk/orders/cancel.json` | Bearer token + valid HMAC barcode | Cancel an unpaid order. Body: `{ order_ref, barcode }`. Verifies HMAC before deleting. 403 bad barcode, 404 not found, 409 paid/active. |
 | `POST /api/kiosk/orders/expire.json` | Bearer token | Manually expire stale orders (operator escape hatch — normal expiry runs in the till plugin) |
