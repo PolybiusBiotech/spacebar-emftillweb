@@ -50,6 +50,23 @@ def _order_barcode(trans_id):
     return f"{barcode_prefix}{trans_id}{_checkdigits(trans_id)}"
 
 
+def _verify_barcode(barcode):
+    """Return transaction_id if barcode HMAC is valid, else None."""
+    if not barcode.startswith(barcode_prefix):
+        return None
+    rest = barcode[len(barcode_prefix):]   # "{trans_id}{3-digit check}"
+    if len(rest) < 4:
+        return None
+    check, trans_id_str = rest[-3:], rest[:-3]
+    try:
+        trans_id = int(trans_id_str)
+    except ValueError:
+        return None
+    if not compare_digest(check, _checkdigits(trans_id)):
+        return None
+    return trans_id
+
+
 def _qr_rows(data):
     """Return QR code as list of '010...' strings, one per row."""
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M,
@@ -570,6 +587,24 @@ def _normalise_token_entry(entry):
     }
 
 
+def _authenticate_token_only(request):
+    """Authenticate bearer token without location check (for cancel — barcode proves ownership)."""
+    configured = _token_config()
+    if not configured:
+        return None, _json_error(
+            503, "kiosk-api-not-configured",
+            "Kiosk API tokens have not been configured.")
+    supplied = _bearer_token(request)
+    if not supplied:
+        return None, _json_error(
+            401, "missing-token",
+            "Supply a bearer token in the Authorization header.")
+    for token, entry in configured.items():
+        if compare_digest(str(token), supplied):
+            return _normalise_token_entry(entry), None
+    return None, _json_error(401, "invalid-token", "Bearer token not valid.")
+
+
 def _authenticate(request, location):
     configured = _token_config()
     if not configured:
@@ -679,6 +714,75 @@ def orders(request):
         except KioskOrderError as e:
             s.rollback()
             return JsonResponse(e.as_dict(), status=e.status_code)
+        except sqlalchemy.exc.OperationalError as e:
+            s.rollback()
+            return _json_error(503, "database-error", str(e))
+
+
+@csrf_exempt
+def cancel(request):
+    if request.method != "POST":
+        return _json_error(405, "method-not-allowed", "Use POST.")
+
+    payload = _request_json(request)
+    if payload is None:
+        return _json_error(400, "invalid-json", "Request body is not JSON.")
+
+    barcode = payload.get("barcode", "")
+    order_ref = payload.get("order_ref", "")
+
+    auth, response = _authenticate_token_only(request)
+    if response:
+        return response
+
+    trans_id = _verify_barcode(barcode)
+    if trans_id is None:
+        return _json_error(403, "bad-barcode", "Barcode checksum is invalid.")
+
+    with tillsession() as s:
+        try:
+            trans = s.query(Transaction)\
+                .filter(Transaction.id == trans_id)\
+                .options(
+                    joinedload(Transaction.meta),
+                    joinedload(Transaction.payments),
+                )\
+                .with_for_update()\
+                .one_or_none()
+
+            if not trans:
+                return _json_error(404, "not-found", "Order not found.")
+
+            meta = _read_meta(trans)
+            if not meta:
+                return _json_error(404, "not-found", "Order not found.")
+
+            if meta.get("order_ref") != order_ref:
+                return _json_error(403, "bad-barcode",
+                                   "Order reference does not match barcode.")
+
+            if trans.closed or trans.payments:
+                return _json_error(409, "already-paid",
+                                   "Order has already been paid and cannot be cancelled.")
+
+            if trans.user is not None:
+                return _json_error(409, "order-in-use",
+                                   "Order is currently being processed at the till.")
+
+            loguser = _fallback_log_user(s, _auth_user(s, auth.get("user")))
+            if loguser:
+                s.add(LogEntry(
+                    source=auth["source"],
+                    loguser=loguser,
+                    description=(
+                        f"Badge cancelled kiosk order {trans.notes} "
+                        f"(transaction {trans.id})")))
+
+            s.delete(trans)
+            s.flush()
+            s.commit()
+            return JsonResponse({"ok": True, "order_ref": order_ref})
+
         except sqlalchemy.exc.OperationalError as e:
             s.rollback()
             return _json_error(503, "database-error", str(e))
