@@ -37,17 +37,34 @@ site_name = "EMF Bars"
 
 [kiosk.tokens.my-dev-token]   # section key IS the bearer token — use random string in prod
 locations = ["Spacebar"]
-order_prefix = "SB"
 source = "spacebar-kiosk-1"  # human-readable label for audit logs
 user = "kiosk"
 ```
 
 The optional `kiosk.tokens` section configures bearer tokens for the
 kiosk order API. Each token is scoped to one or more stockline locations.
-`order_prefix` is printed on slips and shown on the OMS board (e.g. `SB 0042`).
 `user` is the quicktill user under whose name kiosk transactions are recorded.
 `locations` must exactly match the `KIOSK_LOCATION` env var on the kiosk and
 the location name assigned to stocklines in the database.
+
+Per-token limits (all optional):
+
+```toml
+[kiosk.tokens.my-badge-token]
+locations = ["Spacebar"]
+source = "badge"
+user = "kiosk"
+timeout    = 120   # order TTL in seconds (default: 900)
+max_items  = 1     # max quantity per order
+rate_limit = 300   # min seconds between orders from same IP
+```
+
+The shared barcode secret (used to generate and verify HMAC check digits on order barcodes):
+
+```toml
+[kiosk]
+barcode_secret = "<random-secret>"   # shared with quicktill-spacebar-plugin
+```
 
 
 Development
@@ -99,14 +116,15 @@ Orders recalled at the till are handled by the
 | Endpoint | Auth | Purpose |
 |---|---|---|
 | `GET /api/stocklines.json?location=<name>` | None | Product list and live stock levels |
-| `GET /api/kiosk/orders.json?location=<name>` | None | List live unpaid kiosk orders |
-| `POST /api/kiosk/orders.json` | Bearer token | Place a new kiosk order |
-| `POST /api/kiosk/orders/expire.json` | Bearer token | Manually expire stale orders |
+| `GET /api/kiosk/orders.json?location=<name>` | None | List live kiosk orders (OMS poll) |
+| `GET /api/orders?order=<ref>` | None | Single order status (badge status poll) — returns `{ order: { order_ref, state } }` |
+| `POST /api/kiosk/orders.json` | Bearer token | Place a new kiosk order — returns `{ order_ref, barcode, qr_rows }` |
+| `POST /api/kiosk/orders/cancel.json` | Bearer token + valid HMAC barcode | Cancel an unpaid order. Body: `{ order_ref, barcode }`. Verifies HMAC before deleting. 403 bad barcode, 404 not found, 409 paid/active. |
+| `POST /api/kiosk/orders/expire.json` | Bearer token | Manually expire stale orders (operator escape hatch — normal expiry runs in the till plugin) |
 
-Orders in `unpaid` state older than 15 minutes are expired automatically
-on the next `POST` call. Each order gets a short ref (e.g. `SB 0042`)
-from `KioskOrderRef`, a Django-managed counter stored in the SQLite app
-database, independent of the quicktill PostgreSQL instance.
+Order refs are the **quicktill Transaction ID** — no separate counter. Barcodes use HMAC-SHA1 check digits (`KIOSK:<trans_id><3-digit-decimal-check>`) to prevent forgery; both this server and `quicktill-spacebar-plugin` must share the same `kiosk.barcode_secret`.
+
+Unpaid orders older than 15 minutes are expired automatically by the recall plugin's timer, and as a belt-and-braces by the `expire_orders` function called on each `POST /api/kiosk/orders.json`.
 
 
 Seeding a fresh database
