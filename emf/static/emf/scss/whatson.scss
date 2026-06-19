@@ -271,16 +271,19 @@ header {
 }
 
 .connection-status {
-    background-color: yellow;
-    color: black;
-    border: 1px solid black;
     position: fixed;
-    padding: 20px;
-    bottom: 0px;
-    right: 0px;
+    color: $background;
+    background-color: $warning;
+    font-weight: bold;
+    border-radius: .25em;
+    padding: 1em;
+    bottom: 1em;
+    right: 1em;
+
     display: none;
+
     &.disconnected {
-	display: block;
+        display: block;
     }
 }
 
