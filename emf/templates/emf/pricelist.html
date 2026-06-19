@@ -68,7 +68,7 @@
       <h2>{{p.department.description}}</h2>
     {% endifchanged %}
     <div class="product" data-stocktypekey="stocktype/{{p.id}}">
-      <div class="name"><a href="{% url "product" p.id %}">{{ p.manufacturer }} {{ p.name }}</a></div>
+      <div class="name"><a class="productLink" href="{% url "product" p.id %}">{{ p.manufacturer }} {{ p.name }}</a></div>
       <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
       <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
       <div class="locations"></div>
