@@ -1,7 +1,7 @@
 {% comment %}included multiple times from display-on-tap.html{% endcomment %}
 {% for l, pct in lines %}
 <tr>
-  <td><a class="productLink" href="#">{{ l.stocktype.manufacturer }} {{ l.stocktype.name }}</a></td>
+  <td><a class="productLink" href="{% url "product" l.stocktype.id %}">{{ l.stocktype.manufacturer }} {{ l.stocktype.name }}</a></td>
   <td>{{ l.stocktype.abv|default_if_none:"–" }}%</td>
   <td>£{{ l.stocktype.saleprice }}/{{ l.stocktype.unit.name }}</td>
 
