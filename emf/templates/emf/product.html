@@ -1,0 +1,73 @@
+{% extends "emf/base.html" %}
+{% load static %}
+{% block title %}{{product.fullname}}{% endblock %}
+
+{% block jquery %}
+<script src="{% static "emf/js/tillwebclient.js" %}"></script>
+{% endblock %}
+
+{% block heading %}
+<a class="logo" href="/"><img src="/static/emf/img/logo.svg"></a>
+<h1 id="name">{{product.format}}</h1>
+{% endblock %}
+
+{% block content %}
+<div id="abv"></div>
+<div id="price"></div>
+<div id="tastingNotes"></div>
+<div id="locations"></div>
+<div id="remaining"></div>
+<div id="logo"></div>
+
+<div id="connectionStatus" class="connection-status">
+  Connection lost
+</div>
+
+<script type="text/javascript">
+  function abv_to_string(abv) {
+      if (abv === null) {
+	  return '';
+      }
+      return `${abv}%`;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+      const connectionStatus = document.getElementById("connectionStatus");
+      const client = TillWebClient("{{websocket_address}}", false);
+      client.onConnect(function () {
+	  connectionStatus.classList.remove("disconnected");
+	  connectionStatus.classList.add("connected");
+      });
+      client.onDisconnect(function () {
+	  connectionStatus.classList.remove("connected");
+	  connectionStatus.classList.add("disconnected");
+      });
+      const nameElement = document.getElementById("name");
+      const abvElement = document.getElementById("abv");
+      const priceElement = document.getElementById("price");
+      const tastingNotesElement = document.getElementById("tastingNotes");
+      const locationsElement = document.getElementById("locations");
+      const remainingElement = document.getElementById("remaining");
+      const logoElement = document.getElementById("logo");
+      client.onKey("{{key}}", function (m) {
+          updateText(nameElement, m.fullname);
+          updateText(abvElement, abv_to_string(m.abv));
+          updateText(priceElement, `£${m.price}`);
+          updateHTML(tastingNotesElement, m.tasting_notes);
+          const locnames = new Set();
+	  for (const stockline of m.stocklines) {
+	      locnames.add(stockline.location_display);
+	  }
+          updateText(locationsElement, Array.from(locnames).join(', '));
+          const saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
+          const saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
+          updateText(remainingElement, `${saleRemaining} of ${saleTotal} ${m.sale_unit_name_plural} remaining`);
+          if (m.logo) {
+              updateHTML(logoElement, `<img src="${m.logo}">`);
+          } else {
+              updateText(logoElement, "");
+          }
+      });
+  });
+</script>
+{% endblock %}

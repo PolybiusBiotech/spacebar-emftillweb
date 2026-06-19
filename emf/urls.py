@@ -7,6 +7,7 @@ urls = [
     path('', views.frontpage, name="frontpage"),
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico')),
     path('prices/', views.pricelist, name="pricelist"),
+    path('product/<stocktypeid>/', views.product, name="product"),
     path('database-dump/emfcamp.sql.gz', views.database_dump,
          name="emf-database-dump"),
 
