@@ -260,6 +260,11 @@ header {
                     background-color: $warning;
                     &::before { content: "🍺"; }
                 }
+
+                &.spacebar {
+                    background-color: $success;
+                    &::before { content: "🚀"; }
+                }
             }
         }
     }
