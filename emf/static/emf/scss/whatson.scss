@@ -114,6 +114,23 @@ header {
 
 
 .alert-block {
+.productLink {
+    text-decoration: none;
+
+    &:hover {
+        &:after {
+            opacity: 1;
+        }
+    }
+
+    &:after {
+        text-decoration: none;
+        content: ' \276F';
+        opacity: 0.5;
+
+    }
+}
+
     color: $highlightAlt;
     border: .15em solid $highlightAlt;
     padding: 1em;
