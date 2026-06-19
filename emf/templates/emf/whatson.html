@@ -28,22 +28,13 @@
 
 <div class="split">
   <div>
-    <h1>What's on the bar right now?</h1>
+    <h1>On sale now</h1>
     {% include 'emf/ales.html' %}
+    <p><a class="button" href="{% url "pricelist" %}">See the complete list of items for sale</a></p>
   </div>
 
   <div>
-    <h1>What else does the bar sell?</h1>
-
-    <p><a href="{% url "pricelist" %}">See the complete list of items for sale.</a></p>
-    <p>Please note that we don't have space on the bar to sell all the
-      draught beers and ciders at once.</p>
-  </div>
-</div>
-
-<div class="split">
-  <div>
-    <h1>When is the bar open?</h1>
+    <h1>Opening Times</h1>
     {% if sessions %}
     <table>
       <colgroup>
@@ -81,7 +72,8 @@
     <p>The event is over!</p>
     {% endif %}
   </div>
-
+</div>
+<div class="split">
   <div>
     <h1>Event progress</h1>
     <div>
