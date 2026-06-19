@@ -21,6 +21,10 @@ h1, h2, h3, h4, h5, h6 {
     font-family: $headlineFont;
 }
 
+p:last-child {
+    margin-bottom: 0;
+}
+
 header {
     margin-bottom: 2.5%;
 
@@ -112,8 +116,54 @@ header {
     }
 }
 
+.button {
+    display: inline-block;
+    text-decoration: none;
+    padding: 0.6em 1em;
+
+    &:link {
+        color: $highlightAlt;
+    }
+
+    &:visited, &:hover {
+        color: $background;
+        background-color: $highlightAlt;
+
+        &.success {
+            color: $background;
+            background-color: $success;
+        }
+
+        &.warning {
+            color: $background;
+            background-color: $warning;
+        }
+
+        &.danger {
+            color: $background;
+            background-color: $danger;
+        }
+    }
+}
 
 .alert-block {
+    padding: 1em;
+
+    p:first-child {
+        margin-top: 0;
+    }
+
+    p:last-child {
+        margin-bottom: 0;
+    }
+
+    a:link, a:visited, a:hover {
+        color: inherit;
+        text-decoration: underline;
+        font-weight: bold;
+    }
+}
+
 .productLink {
     text-decoration: none;
 
@@ -131,10 +181,9 @@ header {
     }
 }
 
+.button, .alert-block {
     color: $highlightAlt;
     border: .15em solid $highlightAlt;
-    padding: 1em;
-    margin-bottom: 1em;
     border-radius: .25em;
 
     &.success {
@@ -150,20 +199,6 @@ header {
     &.danger {
         border-color: $danger;
         color: $danger;
-    }
-
-    p:first-child {
-        margin-top: 0;
-    }
-
-    p:last-child {
-        margin-bottom: 0;
-    }
-
-    a:link, a:visited, a:hover {
-        color: inherit;
-        text-decoration: underline;
-        font-weight: bold;
     }
 }
 
