@@ -57,8 +57,8 @@
       const logoImg = logoElement.querySelector('img');
 
 
-      function handleLogoClick(e) {
-        console.log(e);
+      function formatNumber(num) {
+        return num % 1 !== 0 ? num.toFixed(2) : String(num);
       }
 
       const locations = {
@@ -85,7 +85,11 @@
         updateText(nameElement, `${m.manufacturer} ${m.name}`);
 
         // Update ABV
-        updateText(abvElement, `ABV: ${abv_to_string(m.abv)}`);
+        if (m.abv) {
+          updateText(abvElement, `${abv_to_string(m.abv)} ABV`);
+        } else {
+          updateText(abvElement, '')
+        }
 
         // Update price
         updateText(priceElement, `£${m.price}`);
@@ -121,8 +125,8 @@
         // Update remaining
         const saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
         const saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
-        const percentConsumed = ((saleRemaining / saleTotal) * 100).toFixed(1);
-        updateText(remainingElement, `${saleRemaining} of ${saleTotal} ${m.sale_unit_name_plural} remaining`);
+        const percentConsumed = formatNumber((saleRemaining / saleTotal) * 100);
+        updateText(remainingElement, `${formatNumber(saleRemaining)} of ${formatNumber(saleTotal)} ${m.sale_unit_name_plural} remaining`);
         bargraphRemainingBar.style.width = `${percentConsumed}%`
         bargraphRemainingBar.querySelector('span').innerText = `${percentConsumed}%`
 
