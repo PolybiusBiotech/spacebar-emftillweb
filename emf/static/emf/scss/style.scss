@@ -70,10 +70,13 @@ table {
     overflow: hidden;
     position: relative;
 
+    &.depletion .bar {
+        float: right;
+    }
+
     .bar {
         background: $highlightBG;
         overflow: hidden;
-        border-radius: 10em;
         height: inherit;
         text-align: center;
         color: $highlightFG;
