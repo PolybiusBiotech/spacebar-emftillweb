@@ -16,9 +16,27 @@ LOGO_DIR.mkdir(parents=True, exist_ok=True)
 # Lookup table from StockLine.location to displayed location; used for
 # stockline.location_display:
 
-robot_arms = 'Robot Arms'
-cybar = 'Cybar'
-secret_bar = 'Secret Bar'
+robot_arms = {
+    'sort': 1,
+    'slug': 'robotarms',
+    'name': 'Robot Arms',
+    'maplink': 'https://map.emfcamp.org/#19.72/52.0413739/-2.3776123',
+}
+
+cybar = {
+    'sort': 2,
+    'slug': 'cybar',
+    'name': 'Cybar',
+    'maplink': 'https://map.emfcamp.org/#21.54/52.0435004/-2.3767086',
+}
+
+secret_bar = {
+    'sort': 3,
+    'slug': 'spacebar',
+    'name': 'SpaceBAR',
+    # XXX Map link needs checking — I'm not sure where it actually will be!
+    'maplink': 'https://map.emfcamp.org/#21.97/52.0437675/-2.37703993',
+}
 
 # XXX the secret bar needs adding to this list. Could this be a
 # database table in the django database?
@@ -30,6 +48,7 @@ locations = {
     'Optics (main bar)': robot_arms,
     'Null Sector': cybar,
     'Optics (Null Sector)': cybar,
+    'SpaceBAR': secret_bar,
 }
 
 
@@ -54,7 +73,12 @@ def stockline_to_dict(line, brief=False):
         'id': line.id,
         'name': line.name,
         'location': line.location,
-        'location_display': locations.get(line.location, line.location),
+        'location_display': locations.get(line.location, {
+            'sort': 1000000,
+            'slug': 'unknown',
+            'name': f'Unknown ({line.location})',
+            'maplink': None,
+        }),
         'note': line.note,
         'linetype': line.linetype,
     }
@@ -85,8 +109,12 @@ def stocktype_to_dict(s):
     # stocklines to find stocklines that are actually selling this
     # stocktype. Add stocklines explicitly selling stock items of this
     # type.
-    stocklines = [sl for sl in s.stocklines if sl.linetype == "continuous"] \
-        + [si.stockline for si in s.items if si.stockline]
+    stocklines = (
+        [stockline_to_dict(sl, brief=True)
+         for sl in s.stocklines if sl.linetype == "continuous"]
+        + [stockline_to_dict(si.stockline, brief=True)
+           for si in s.items if si.stockline])
+    stocklines.sort(key=lambda x: x['location_display']['sort'])
 
     return {
         'type': 'stocktype',
@@ -109,7 +137,7 @@ def stocktype_to_dict(s):
         'stock_unit_name': s.unit.stock_unit_name,
         'stock_unit_name_plural': s.unit.stock_unit_name_plural,
         'base_units_per_stock_unit': s.unit.base_units_per_stock_unit,
-        'stocklines': [stockline_to_dict(sl, brief=True) for sl in stocklines],
+        'stocklines': stocklines,
     }
 
 
