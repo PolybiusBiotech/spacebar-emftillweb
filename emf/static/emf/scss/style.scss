@@ -1,3 +1,4 @@
+@use "sass:color";
 @use 'colours' as *;
 
 @keyframes pulse {
@@ -83,7 +84,7 @@ table {
 
     .bar {
         background: $highlightBG;
-        background: linear-gradient(90deg, $highlightBG 40%, lighten($highlightBG, 20%), $highlightBG 60%);
+        background: linear-gradient(90deg, $highlightBG 40%, color.adjust($highlightBG, $lightness: 20%), $highlightBG 60%);
         background-size: $travel 100%;
         animation: slide 2s linear infinite;
 
