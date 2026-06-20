@@ -5,6 +5,13 @@
     30%, 70% { background-color: $danger; }
 }
 
+$travel: 1000px;
+
+@keyframes slide {
+    0%   { background-position: 0% center; }
+    100% { background-position: $travel center; }
+}
+
 table {
     line-height: 1.5;
     width: 100%;
@@ -76,6 +83,10 @@ table {
 
     .bar {
         background: $highlightBG;
+        background: linear-gradient(90deg, $highlightBG 40%, lighten($highlightBG, 20%), $highlightBG 60%);
+        background-size: $travel 100%;
+        animation: slide 2s linear infinite;
+
         overflow: hidden;
         height: inherit;
         text-align: center;
