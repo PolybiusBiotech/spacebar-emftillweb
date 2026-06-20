@@ -11,15 +11,29 @@
 {% endblock %}
 
 {% block content %}
+<div class="product">
   <div class="productDetails">
-    <h2 id="name">{{product.name}}</h2>
-    <div id="abv"></div>
-    <div id="price"></div>
-    <div id="tastingNotes"></div>
-    <div id="locations"></div>
-    <div id="remaining"></div>
+    <h1 class="name">{{product.name}}</h1>
+    <div class="abv"></div>
+    <div class="price"></div>
+    <div class="tastingNotes">
+      <h2>Tasting notes</h2>
+      <p></p>
+    </div>
+    <div class="locations">
+      <h2>Locations</h2>
+      <ul></ul>
+    </div>
+    <div class="remaining">
+      <h2>Remaining</h2>
+      <p></p>
+      <div class="bargraph depletion">
+        <div class="bar"><span>10%</span></div>
+      </div>
+    </div>
   </div>
-  <div id="logo"></div>
+  <div class="productLogo"><img src=""></div>
+</div>
 
   <div id="connectionStatus" class="connection-status">Connection lost</div>
 
@@ -32,42 +46,93 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const connectionStatus = document.getElementById("connectionStatus");
-        const client = TillWebClient("{{websocket_address}}", false);
-        client.onConnect(function () {
-      connectionStatus.classList.remove("disconnected");
-      connectionStatus.classList.add("connected");
-        });
-        client.onDisconnect(function () {
-      connectionStatus.classList.remove("connected");
-      connectionStatus.classList.add("disconnected");
-        });
-        const nameElement = document.getElementById("name");
-        const abvElement = document.getElementById("abv");
-        const priceElement = document.getElementById("price");
-        const tastingNotesElement = document.getElementById("tastingNotes");
-        const locationsElement = document.getElementById("locations");
-        const remainingElement = document.getElementById("remaining");
-        const logoElement = document.getElementById("logo");
-        client.onKey("{{key}}", function (m) {
-            updateText(nameElement, `${m.manufacturer} ${m.name}`);
-            updateText(abvElement, abv_to_string(m.abv));
-            updateText(priceElement, `£${m.price}`);
-            updateHTML(tastingNotesElement, m.tasting_notes);
-            const locnames = new Set();
-      for (const stockline of m.stocklines) {
-          locnames.add(stockline.location_display);
+      const nameElement = document.querySelector(".name");
+      const abvElement = document.querySelector(".abv");
+      const priceElement = document.querySelector(".price");
+      const tastingNotesElement = document.querySelector(".tastingNotes");
+      const locationsElement = document.querySelector(".locations ul");
+      const bargraphRemainingBar = document.querySelector('.remaining .bargraph .bar');
+      const remainingElement = document.querySelector('.remaining p')
+      const logoElement = document.querySelector(".productLogo");
+      const logoImg = logoElement.querySelector('img');
+
+
+      function handleLogoClick(e) {
+        console.log(e);
       }
-            updateText(locationsElement, Array.from(locnames).join(', '));
-            const saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
-            const saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
-            updateText(remainingElement, `${saleRemaining} of ${saleTotal} ${m.sale_unit_name_plural} remaining`);
-            if (m.logo) {
-                updateHTML(logoElement, `<img src="${m.logo}">`);
-            } else {
-                updateText(logoElement, "");
-            }
-        });
+
+      const locations = {
+        "Robot Arms": 'robotarms',
+        "Cybar": 'cybar',
+        "Secret Bar": 'spacebar'
+      }
+
+      const connectionStatus = document.getElementById("connectionStatus");
+      const client = TillWebClient("{{websocket_address}}", false);
+      client.onConnect(function () {
+        connectionStatus.classList.remove("disconnected");
+        connectionStatus.classList.add("connected");
+      });
+
+      client.onDisconnect(function () {
+        connectionStatus.classList.remove("connected");
+        connectionStatus.classList.add("disconnected");
+      });
+
+      client.onKey("{{key}}", function (m) {
+
+        // Update name
+        updateText(nameElement, `${m.manufacturer} ${m.name}`);
+
+        // Update ABV
+        updateText(abvElement, `ABV: ${abv_to_string(m.abv)}`);
+
+        // Update price
+        updateText(priceElement, `£${m.price}`);
+
+        // Update tasting notes
+        if (m.tasting_notes) {
+          tastingNotesElement.querySelector('p').innerHTML = m.tasting_notes;
+          tastingNotesElement.style.display = '';
+        } else {
+          tastingNotesElement.style.display = 'none';
+        }
+
+        // Update locations
+        const locnames = new Set();
+        for (const stockline of m.stocklines) {
+            locnames.add(stockline.location_display);
+        }
+
+        if (locnames.size > 0) {
+          locationsElement.innerHTML = '<p>This item currently on sale at:</p>';
+          locnames.forEach(location => {
+            const locLi = document.createElement('li');
+            const locSpan = document.createElement('span');
+              locSpan.classList.add('location', locations[location]);
+              locSpan.innerText = location;
+            locLi.appendChild(locSpan);
+            locationsElement.appendChild(locLi);
+          })
+        } else {
+          locationsElement.innerHTML = '<p>This item is not currently on sale.</p>'
+        }
+
+        // Update remaining
+        const saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
+        const saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
+        const percentConsumed = ((saleRemaining / saleTotal) * 100).toFixed(1);
+        updateText(remainingElement, `${saleRemaining} of ${saleTotal} ${m.sale_unit_name_plural} remaining`);
+        bargraphRemainingBar.style.width = `${percentConsumed}%`
+        bargraphRemainingBar.querySelector('span').innerText = `${percentConsumed}%`
+
+        // Update logo
+        if (m.logo) {
+            updateHTML(logoElement, `<img src="${m.logo}">`);
+        } else {
+            updateText(logoElement, "");
+        }
+      });
     });
   </script>
 {% endblock %}
