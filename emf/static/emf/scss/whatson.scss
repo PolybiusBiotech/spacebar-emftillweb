@@ -236,39 +236,90 @@ header {
             background-color: transparent;
             font-weight: bold;
         }
+    }
+}
+
+.location {
+    background-color: $highlightBG;
+    color: $highlightFG;
+    padding: 0 0.5em;
+    border-radius: 1em;
+    margin-right: 0.2em;
+    font-size: 0.9em;
+    white-space: nowrap;
+
+    &::before {
+        padding-right: 0.2em;
+    }
+
+    &.cybar {
+        background-color: $danger;
+        &::before { content: "🤖"; }
+    }
+
+    &.robotarms {
+        background-color: $warning;
+        &::before { content: "🍺"; }
+    }
+
+    &.spacebar {
+        background-color: $success;
+        &::before { content: "🚀"; }
+    }
+}
+
+.product {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1em;
+
+    .productLogo {
+        text-align: right;
+
+        img {
+            width: 75%;;
+        }
+    }
+
+    .productDetails {
+        .name {
+            font-size: 3em;
+            margin-bottom: 0;
+        }
+
+        .abv {
+            font-size: 1.5em;
+        }
+
+        div {
+            h2 {
+                margin-bottom: 0;
+            }
+        }
 
         .locations {
-            .location {
-                background-color: $highlightBG;
-                color: $highlightFG;
-                padding: 0 0.5em;
-                border-radius: 1em;
-                margin-right: 0.2em;
-                font-size: 0.9em;
-                white-space: nowrap;
+            margin-top: 2em;
 
-                &::before {
-                    padding-right: 0.2em;
-                }
+            ul {
+                list-style: none;
+                padding: 0;
 
-                &.cybar {
-                    background-color: $danger;
-                    &::before { content: "🤖"; }
+                li {
+                    display: inline;
+                    margin-right: .5em;
                 }
+            }
+        }
 
-                &.robotarms {
-                    background-color: $warning;
-                    &::before { content: "🍺"; }
-                }
-
-                &.spacebar {
-                    background-color: $success;
-                    &::before { content: "🚀"; }
-                }
+        .remaining {
+            p {
+                margin-top: 0.5em;
             }
         }
     }
 }
+
+
 
 .connection-status {
     position: fixed;
@@ -287,9 +338,14 @@ header {
     }
 }
 
+
 @media screen and ( max-width: 76em ) {
     body {
         margin: 2em;
+    }
+
+    .product {
+        grid-template-columns: 1fr 1fr;
     }
 
     header {
@@ -387,6 +443,28 @@ header {
 }
 
 @media screen and ( max-width: 768px ) {
+    .product {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+
+        .productDetails {
+            order: 2;
+
+            h1 {
+                margin-top: .25em;
+            }
+        }
+
+        .productLogo {
+            order: 1;
+            // position: absolute;
+            width: 100%;
+            text-align: center;
+            // top: 0;
+            // right: 0;
+        }
+    }
+
     header {
         div {
             flex-direction: column;
