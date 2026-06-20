@@ -123,12 +123,27 @@
         }
 
         // Update remaining
-        const saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
-        const saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
+        let saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
+        let saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
+
+        // Bargraph
         const percentConsumed = formatNumber((saleRemaining / saleTotal) * 100);
-        updateText(remainingElement, `${formatNumber(saleRemaining)} of ${formatNumber(saleTotal)} ${m.sale_unit_name_plural} remaining`);
         bargraphRemainingBar.style.width = `${percentConsumed}%`
         bargraphRemainingBar.querySelector('span').innerText = `${percentConsumed}%`
+
+        // Text update
+        // If shots...
+        if (m.sale_unit_name_plural == '25mls') {
+          saleRemaining *= 25
+          saleTotal *= 25
+          updateText(remainingElement, `${formatNumber(saleRemaining)}ml of ${formatNumber(saleTotal)}ml remaining`);
+        } else if (m.sale_unit_name_plural == '35mls') {
+          saleRemaining *= 35
+          saleTotal *= 35
+          updateText(remainingElement, `${formatNumber(saleRemaining)}ml of ${formatNumber(saleTotal)}ml remaining`);
+        } else {
+          updateText(remainingElement, `${formatNumber(saleRemaining)} of ${formatNumber(saleTotal)} ${m.sale_unit_name_plural} remaining`);
+        }
 
         // Update logo
         if (m.logo) {
