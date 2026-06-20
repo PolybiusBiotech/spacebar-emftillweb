@@ -121,11 +121,11 @@ header {
     text-decoration: none;
     padding: 0.6em 1em;
 
-    &:link {
+    &:link, &:visited {
         color: $highlightAlt;
     }
 
-    &:visited, &:hover {
+    &:hover {
         color: $background;
         background-color: $highlightAlt;
 
