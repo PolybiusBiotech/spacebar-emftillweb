@@ -1,43 +1,25 @@
-<table>
-  <colgroup>
-    <col width="50%" />
-    <col width="15%" />
-    <col width="20%" />
-    <col width="15%" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th scope="col">Name</th>
-      <th scope="col">ABV</th>
-      <th scope="col">Price</th>
-      <th scope="col" class="stock">Stock</th>
-    </tr>
-  </thead>
+<div class="products woloc">
+  <div class="product head">
+    <div class="name">Name</div>
+    <div class="abv">ABV</div>
+    <div class="price">Price</div>
+    <div class="locations">Locations</div>
+    <div class="stock">Stock</div>
+  </div>
 
   {% if ales %}
-  <tbody class="sub">
-    <tr>
-      <th colspan="4">Real Ales</th>
-    </tr>
+    <h2>Real Ales</h2>
     {% include "emf/ontap-lines.html" with lines=ales %}
-  </tbody>
   {% endif %}
 
   {% if kegs %}
-  <tbody class="sub">
-    <tr>
-      <th colspan="4">Keg Taps</th>
-    </tr>
+    <h2>Keg Taps</h2>
     {% include "emf/ontap-lines.html" with lines=kegs %}
-  </tbody>
   {% endif %}
 
   {% if ciders %}
-  <tbody class="sub">
-    <tr>
-      <th colspan="4">Ciders</th>
-    </tr>
+    <h2>Ciders</h2>
     {% include "emf/ontap-lines.html" with lines=ciders %}
-  </tbody>
   {% endif %}
-</table>
+
+</div>
