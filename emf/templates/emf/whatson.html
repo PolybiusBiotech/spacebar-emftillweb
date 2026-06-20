@@ -32,48 +32,48 @@
     {% include 'emf/ales.html' %}
     <p><a class="button" href="{% url "pricelist" %}">See the complete list of items for sale</a></p>
   </div>
+</div>
 
+<div class="split">
   <div>
     <h1>Opening Times</h1>
     {% if sessions %}
-    <table>
-      <colgroup>
-        <col width="20%">
-        <col width="20%">
-        <col width="20%">
-        {% if session_comments_exist %}
-        <col width="40%">
-        {% endif %}
-      </colgroup>
-      <thead>
-        <tr>
-          <th scope="col">Day</th>
-          <th scope="col">Open</th>
-          <th scope="col">Close</th>
+      <table>
+        <colgroup>
+          <col width="20%">
+          <col width="20%">
+          <col width="20%">
           {% if session_comments_exist %}
-          <th scope="col"></th>
+          <col width="40%">
           {% endif %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in sessions %}
-        <tr>
-          <td>{{s.opening_time|date:"l"}}</td>
-          <td>{{s.opening_time|date:"H:i"}}</td>
-          <td>{{s.closing_time|date:"H:i"}}</td>
-          {% if session_comments_exist %}
-          <td>{{s.comment}}</td>
-          {% endif %}
-	</tr>
-	{% endfor %}
-      </tbody>
-    </table>
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Day</th>
+            <th scope="col">Open</th>
+            <th scope="col">Close</th>
+            {% if session_comments_exist %}
+            <th scope="col"></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+            <tr>
+              <td>{{s.opening_time|date:"l"}}</td>
+              <td>{{s.opening_time|date:"H:i"}}</td>
+              <td>{{s.closing_time|date:"H:i"}}</td>
+              {% if session_comments_exist %}
+              <td>{{s.comment}}</td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% else %}
     <p>The event is over!</p>
     {% endif %}
   </div>
-</div>
-<div class="split">
   <div>
     <h1>Event progress</h1>
     <div>
