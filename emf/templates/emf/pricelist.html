@@ -67,13 +67,13 @@
     {% ifchanged p.department.description %}
       <h2>{{p.department.description}}</h2>
     {% endifchanged %}
-    <div class="product" data-stocktypekey="stocktype/{{p.id}}">
-      <div class="name"><a class="productLink" href="{% url "product" p.id %}">{{ p.manufacturer }} {{ p.name }}</a></div>
+    <a href="{% url "product" p.id %}" class="product" data-stocktypekey="stocktype/{{p.id}}">
+      <div class="name">{{ p.manufacturer }} {{ p.name }}</div>
       <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
       <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
       <div class="locations"></div>
       <div class="stock"></div>
-    </div>
+    </a>
   {% endfor %}
 </div>
 

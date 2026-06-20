@@ -164,23 +164,6 @@ header {
     }
 }
 
-.productLink {
-    text-decoration: none;
-
-    &:hover {
-        &:after {
-            opacity: 1;
-        }
-    }
-
-    &:after {
-        text-decoration: none;
-        content: ' \276F';
-        opacity: 0.5;
-
-    }
-}
-
 .button, .alert-block {
     color: $highlightAlt;
     border: .15em solid $highlightAlt;
@@ -223,11 +206,35 @@ header {
 
     .product {
         display: contents;
+        text-decoration: none;
 
         > * {
             padding: 0.5em 0;
+            transition: background-color .25s;
         }
 
+        &:hover {
+            >* {
+                background-color: rgba(255, 255, 255, 0.05) !important;
+            }
+
+            .name {
+                &:after {
+                    opacity: 1;
+                }
+            }
+        }
+
+        .name {
+            text-decoration: none;
+
+            &:after {
+                text-decoration: none;
+                content: ' \276F';
+                opacity: 0.5;
+
+            }
+        }
         &:nth-child(even) > * {
             background-color: rgba(255, 255, 255, 0.025);
         }
@@ -360,10 +367,6 @@ header {
         }
     }
 
-    .split {
-        // margin: 0 1em;
-    }
-
     table {
         .stock {
             text-align: center;
@@ -396,13 +399,19 @@ header {
             margin: 1em 0;
             border: 1px solid rgba(255, 255, 255, 0.05);
             background-color: rgba(255, 255, 255, 0.025);
+            transition: background-color 0.25s;
 
             > * {
                 padding: 0;
+                background-color: transparent !important;
             }
 
-            &:nth-child(even) > * {
-                background-color: transparent;
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.05);
+
+                > * {
+                    background-color: transparent !important;
+                }
             }
 
             &.head {
@@ -413,11 +422,12 @@ header {
                 flex: 1;
                 order: 1;
                 font-weight: bold;
-                font-size: 1.125em;
+                font-size: 1.25em;
             }
+
             .stock {
                 order: 2;
-                margin-left: auto;
+                margin-left: 0.5em;
             }
 
             .abv, .price, .locations {
@@ -427,10 +437,10 @@ header {
             }
 
             .locations:not(:empty) {
-		&::before {
+		        &::before {
                     content: "Available at: ";
-		}
-	    }
+		        }
+	        }
 
             .abv:not(:empty) {
                 &::before {
@@ -443,7 +453,7 @@ header {
 }
 
 @media screen and ( max-width: 768px ) {
-    .product {
+    .productPage {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto;
 
@@ -457,11 +467,8 @@ header {
 
         .productLogo {
             order: 1;
-            // position: absolute;
             width: 100%;
             text-align: center;
-            // top: 0;
-            // right: 0;
         }
     }
 
