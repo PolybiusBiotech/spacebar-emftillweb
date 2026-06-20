@@ -92,66 +92,66 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
-      const connectionStatus = document.getElementById("connectionStatus");
-      const client = TillWebClient("{{websocket_address}}", false);
-      client.onConnect(function () {
-	  connectionStatus.classList.remove("disconnected");
-	  connectionStatus.classList.add("connected");
+    const connectionStatus = document.getElementById("connectionStatus");
+    const client = TillWebClient("{{websocket_address}}", false);
+    client.onConnect(function () {
+      connectionStatus.classList.remove("disconnected");
+      connectionStatus.classList.add("connected");
+    });
+    client.onDisconnect(function () {
+      connectionStatus.classList.remove("connected");
+      connectionStatus.classList.add("disconnected");
+    });
+
+    const stocktypes = document.querySelectorAll("[data-stocktypekey]");
+    const lastfew = get_template("stock_lastfew");
+    const low = get_template("stock_low");
+    const plenty = get_template("stock_plenty");
+    const loc_robotarms = get_template("location_robotarms");
+    const loc_cybar = get_template("location_cybar");
+    const loc_secretbar = get_template("location_secretbar");
+
+    stocktypes.forEach(function (product) {
+      const key = product.dataset.stocktypekey;
+      client.onKey(key, function (message) {
+        const elems = product.children;
+        const stock = elems[4];
+        updateText(elems[0], `${message.manufacturer} ${message.name}`);
+        updateText(elems[1], abv_to_string(message.abv));
+        updateText(elems[2], `£${message.price}/${message.sale_unit_name}`);
+
+        const locnames = new Set();
+        for (const stockline of message.stocklines) {
+          locnames.add(stockline.location_display);
+        }
+        const locations = elems[3].cloneNode();
+        if (locnames.has("Robot Arms")) {
+          locations.appendChild(document.importNode(
+          loc_robotarms, true));
+        }
+        if (locnames.has("Cybar")) {
+          locations.appendChild(document.importNode(
+          loc_cybar, true));
+        }
+        if (locnames.has("Secret Bar")) {
+          locations.appendChild(document.importNode(
+          loc_secretbar, true));
+        }
+        updateNode(elems[3], locations);
+
+        const remain_pct = (
+          message.base_units_remaining / message.base_units_bought
+          * 100);
+
+        if (remain_pct < 5.0) {
+          updateNode(stock, lastfew);
+        } else if (remain_pct < 15.0) {
+          updateNode(stock, low);
+        } else {
+          updateNode(stock, plenty);
+        }
       });
-      client.onDisconnect(function () {
-	  connectionStatus.classList.remove("connected");
-	  connectionStatus.classList.add("disconnected");
-      });
-
-      const stocktypes = document.querySelectorAll("[data-stocktypekey]");
-      const lastfew = get_template("stock_lastfew");
-      const low = get_template("stock_low");
-      const plenty = get_template("stock_plenty");
-      const loc_robotarms = get_template("location_robotarms");
-      const loc_cybar = get_template("location_cybar");
-      const loc_secretbar = get_template("location_secretbar");
-
-      stocktypes.forEach(function (product) {
-	  const key = product.dataset.stocktypekey;
-	  client.onKey(key, function (message) {
-	      const elems = product.children;
-	      const stock = elems[4];
-	      updateText(elems[0], `${message.manufacturer} ${message.name}`);
-	      updateText(elems[1], abv_to_string(message.abv));
-	      updateText(elems[2], `£${message.price}/${message.sale_unit_name}`);
-
-	      const locnames = new Set();
-	      for (const stockline of message.stocklines) {
-		  locnames.add(stockline.location_display);
-	      }
-	      const locations = elems[3].cloneNode();
-	      if (locnames.has("Robot Arms")) {
-		  locations.appendChild(document.importNode(
-		      loc_robotarms, true));
-	      }
-	      if (locnames.has("Cybar")) {
-		  locations.appendChild(document.importNode(
-		      loc_cybar, true));
-	      }
-	      if (locnames.has("Secret Bar")) {
-		  locations.appendChild(document.importNode(
-		      loc_secretbar, true));
-	      }
-	      updateNode(elems[3], locations);
-
-	      const remain_pct = (
-		  message.base_units_remaining / message.base_units_bought
-		      * 100);
-
-	      if (remain_pct < 5.0) {
-		  updateNode(stock, lastfew);
-	      } else if (remain_pct < 15.0) {
-		  updateNode(stock, low);
-	      } else {
-		  updateNode(stock, plenty);
-	      }
-	  });
-      });
+    });
   });
 </script>
 {% endblock %}

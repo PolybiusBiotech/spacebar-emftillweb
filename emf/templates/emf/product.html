@@ -11,30 +11,31 @@
 {% endblock %}
 
 {% block content %}
-<div class="product">
-  <div class="productDetails">
-    <h1 class="name">{{product.name}}</h1>
-    <div class="abv"></div>
-    <div class="price"></div>
-    <div class="tastingNotes">
-      <h2>Tasting notes</h2>
-      <p></p>
-    </div>
-    <div class="locations">
-      <h2>Locations</h2>
-      <ul></ul>
-    </div>
-    <div class="remaining">
-      <h2>Remaining</h2>
-      <p></p>
-      <div class="bargraph depletion">
-        <div class="bar"><span>10%</span></div>
+  <div class="product">
+    <div class="productDetails">
+      <h1 class="name">{{product.name}}</h1>
+      <div class="abv"></div>
+      <div class="price"></div>
+      <div class="tastingNotes">
+        <h2>Tasting notes</h2>
+        <p></p>
+      </div>
+      <div class="locations">
+        <h2>Locations</h2>
+        <ul></ul>
+      </div>
+      <div class="remaining">
+        <h2>Remaining</h2>
+        <p></p>
+        <div class="bargraph depletion">
+          <div class="bar"><span>10%</span></div>
+        </div>
       </div>
     </div>
+    <div class="productLogo"><img src=""></div>
   </div>
-  <div class="productLogo"><img src=""></div>
-</div>
 
+  <div id="connectionStatus" class="connection-status">Connection Lost</div>
 
   <script type="text/javascript">
     function abv_to_string(abv) {
