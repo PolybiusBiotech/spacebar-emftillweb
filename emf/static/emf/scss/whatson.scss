@@ -268,7 +268,7 @@ header {
     }
 }
 
-.product {
+.productPage {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: 1em;
@@ -344,7 +344,7 @@ header {
         margin: 2em;
     }
 
-    .product {
+    .productPage {
         grid-template-columns: 1fr 1fr;
     }
 
