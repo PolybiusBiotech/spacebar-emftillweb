@@ -36,8 +36,8 @@
 
 <div class="split">
   <div>
-    <h1>Opening Times</h1>
     {% if sessions %}
+      <h1>Opening Times</h1>
       <table>
         <colgroup>
           <col width="20%">
@@ -71,7 +71,9 @@
         </tbody>
       </table>
     {% else %}
-    <p>The event is over!</p>
+      <h1>Event over</h1>
+      <p>Thank you for your patronage, the bar is now closed for this year.</p>
+      <p><a href="https://emfcamp.org" class="button">Find about our next event</a></p>
     {% endif %}
   </div>
   <div>
