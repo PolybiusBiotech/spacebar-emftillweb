@@ -60,14 +60,14 @@
     <div class="abv">ABV</div>
     <div class="price">Price</div>
     <div class="locations">Locations</div>
-    <div class="stock">Stock</div>
+    <div class="stock">Total Stock</div>
   </div>
 
   {% for p in products %}
     {% ifchanged p.department.description %}
       <h2>{{p.department.description}}</h2>
     {% endifchanged %}
-    <a href="{% url "product" p.id %}" class="product" data-stocktypekey="stocktype/{{p.id}}">
+    <a href="{% url "product" p.id %}" class="product item" data-stocktypekey="stocktype/{{p.id}}">
       <div class="name">{{ p.manufacturer }} {{ p.name }}</div>
       <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
       <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
