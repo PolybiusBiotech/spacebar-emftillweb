@@ -1,0 +1,139 @@
+{% extends "emf/base.html" %}
+{% load static %}
+{% block title %}{{product.fullname}}{% endblock %}
+
+{% block jquery %}
+<script src="{% static "emf/js/tillwebclient.js" %}"></script>
+{% endblock %}
+
+{% block heading %}
+<a class="logo" href="/"><img src="/static/emf/img/logo.svg"></a>
+{% endblock %}
+
+{% block content %}
+<div class="productPage">
+  <div class="productDetails">
+    <h1 class="name">{{product.name}}</h1>
+    <div class="abv"></div>
+    <div class="price"></div>
+    <div class="tastingNotes">
+      <h2>Tasting notes</h2>
+      <p></p>
+    </div>
+    <div class="locations">
+      <h2>Locations</h2>
+      <ul></ul>
+    </div>
+    <div class="remaining">
+      <h2>Remaining</h2>
+      <p></p>
+      <div class="bargraph depletion">
+        <div class="bar"><span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="productLogo"><img src=""></div>
+</div>
+
+<div id="connectionStatus" class="connection-status">Connection Lost</div>
+
+<script type="text/javascript">
+  document.addEventListener('DOMContentLoaded', function () {
+      const nameElement = document.querySelector(".name");
+      const abvElement = document.querySelector(".abv");
+      const priceElement = document.querySelector(".price");
+      const tastingNotesElement = document.querySelector(".tastingNotes");
+      const locationsElement = document.querySelector(".locations ul");
+      const bargraphRemainingBar = document.querySelector('.remaining .bargraph .bar');
+      const remainingElement = document.querySelector('.remaining p')
+      const logoElement = document.querySelector(".productLogo");
+      const logoImg = logoElement.querySelector('img');
+
+
+      function formatNumber(num) {
+          return num % 1 !== 0 ? num.toFixed(2) : String(num);
+      }
+
+      const connectionStatus = document.getElementById("connectionStatus");
+      const client = TillWebClient("{{websocket_address}}", false);
+      client.onConnect(function () {
+          connectionStatus.classList.remove("disconnected");
+          connectionStatus.classList.add("connected");
+      });
+
+      client.onDisconnect(function () {
+          connectionStatus.classList.remove("connected");
+          connectionStatus.classList.add("disconnected");
+      });
+
+      client.onKey("{{key}}", function (m) {
+
+          // Update name
+          updateText(nameElement, `${m.manufacturer} ${m.name}`);
+
+          // Update ABV
+          if (m.abv) {
+              updateText(abvElement, `${m.abv}% ABV`);
+          } else {
+              updateText(abvElement, '')
+          }
+
+          // Update price
+          updateText(priceElement, `£${m.price}`);
+
+          // Update tasting notes
+          if (m.tasting_notes) {
+              tastingNotesElement.querySelector('p').innerHTML = m.tasting_notes;
+              tastingNotesElement.style.display = '';
+          } else {
+              tastingNotesElement.style.display = 'none';
+          }
+
+          // Update locations
+          if (m.stocklines.length > 0) {
+              locationsElement.innerHTML = '<p>This product is currently on sale at:</p>';
+              m.stocklines.forEach(stockline => {
+                  const locLi = document.createElement('li');
+                  const locSpan = document.createElement('span');
+                  locSpan.classList.add('location', stockline.location_display.slug);
+                  locSpan.innerText = stockline.location_display.name;
+                  locLi.appendChild(locSpan);
+                  locationsElement.appendChild(locLi);
+              })
+          } else {
+              locationsElement.innerHTML = '<p>This product is not currently on sale.</p>'
+          }
+
+          // Update remaining
+          let saleRemaining = m.base_units_remaining / m.base_units_per_sale_unit;
+          let saleTotal = m.base_units_bought / m.base_units_per_sale_unit;
+
+          // Bargraph
+          const percentConsumed = formatNumber((saleRemaining / saleTotal) * 100);
+          bargraphRemainingBar.style.width = `${percentConsumed}%`
+          bargraphRemainingBar.querySelector('span').innerText = `${percentConsumed}%`
+
+          // Text update
+          // If shots...
+          if (m.sale_unit_name_plural == '25mls') {
+              saleRemaining *= 25
+              saleTotal *= 25
+              updateText(remainingElement, `${formatNumber(saleRemaining)}ml of ${formatNumber(saleTotal)}ml remaining`);
+          } else if (m.sale_unit_name_plural == '35mls') {
+              saleRemaining *= 35
+              saleTotal *= 35
+              updateText(remainingElement, `${formatNumber(saleRemaining)}ml of ${formatNumber(saleTotal)}ml remaining`);
+          } else {
+              updateText(remainingElement, `${formatNumber(saleRemaining)} of ${formatNumber(saleTotal)} ${m.sale_unit_name_plural} remaining`);
+          }
+
+          // Update logo
+          if (m.logo) {
+              updateHTML(logoElement, `<img src="${m.logo}">`);
+          } else {
+              updateText(logoElement, "");
+          }
+      });
+  });
+  </script>
+{% endblock %}

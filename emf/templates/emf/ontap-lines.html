@@ -1,21 +1,21 @@
 {% comment %}included multiple times from display-on-tap.html{% endcomment %}
-{% for l, pct in lines %}
-<tr>
-  <td>{{ l.stocktype.manufacturer }} {{ l.stocktype.name }}</td>
-  <td>{{ l.stocktype.abv|default_if_none:"–" }}%</td>
-  <td>£{{ l.stocktype.saleprice }}/{{ l.stocktype.unit.name }}</td>
-
-  <td class="stock">
-    {% if pct < 0.1 %}
-    <span class="orb lastfew" title="Last few"></span>
-    <span class="text">Last few</span>
-    {% elif pct < 0.2 %}
-    <span class="orb low" title="Low"></span>
-    <span class="text">Low</span>
-    {% else %}
-    <span class="orb plenty" title="Plenty"></span>
-    <span class="text">Plenty</span>
-    {% endif %}
-  </td>
-</tr>
+{% for p, pct in lines %}
+  <a href="{% url "product" p.stocktype.id %}" class="product item" data-stocktypekey="stocktype/{{p.id}}">
+    <div class="name">{{ p.stocktype.manufacturer }} {{ p.stocktype.name }}</div>
+    <div class="abv">{% if p.stocktype.abv != None %}{{ p.stocktype.abv }}%{% endif %}</div>
+    <div class="price">£{{ p.stocktype.saleprice }}/{{ p.stocktype.unit.item_name }}</div>
+    <div class="locations"></div>
+    <div class="stock">
+      {% if pct < 0.05 %}
+        <span class="orb lastfew" title="Last few"></span>
+        <span class="text">Last few</span>
+      {% elif pct < 0.15 %}
+        <span class="orb low" title="Low"></span>
+        <span class="text">Low</span>
+      {% else %}
+        <span class="orb plenty" title="Plenty"></span>
+        <span class="text">Plenty</span>
+      {% endif %}
+    </div>
+  </a>
 {% endfor %}

@@ -28,60 +28,54 @@
 
 <div class="split">
   <div>
-    <h1>What's on the bar right now?</h1>
+    <h1>On tap now at The Robot Arms</h1>
     {% include 'emf/ales.html' %}
-  </div>
-
-  <div>
-    <h1>What else does the bar sell?</h1>
-
-    <p><a href="{% url "pricelist" %}">See the complete list of items for sale.</a></p>
-    <p>Please note that we don't have space on the bar to sell all the
-      draught beers and ciders at once.</p>
+    <p><a class="button" href="{% url "pricelist" %}">See the complete list of items for sale on all bars</a></p>
   </div>
 </div>
 
 <div class="split">
   <div>
-    <h1>When is the bar open?</h1>
     {% if sessions %}
-    <table>
-      <colgroup>
-        <col width="20%">
-        <col width="20%">
-        <col width="20%">
-        {% if session_comments_exist %}
-        <col width="40%">
-        {% endif %}
-      </colgroup>
-      <thead>
-        <tr>
-          <th scope="col">Day</th>
-          <th scope="col">Open</th>
-          <th scope="col">Close</th>
+      <h1>The Robot Arms Opening Times</h1>
+      <table>
+        <colgroup>
+          <col width="20%">
+          <col width="20%">
+          <col width="20%">
           {% if session_comments_exist %}
-          <th scope="col"></th>
+          <col width="40%">
           {% endif %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in sessions %}
-        <tr>
-          <td>{{s.opening_time|date:"l"}}</td>
-          <td>{{s.opening_time|date:"H:i"}}</td>
-          <td>{{s.closing_time|date:"H:i"}}</td>
-          {% if session_comments_exist %}
-          <td>{{s.comment}}</td>
-          {% endif %}
-	</tr>
-	{% endfor %}
-      </tbody>
-    </table>
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">Day</th>
+            <th scope="col">Open</th>
+            <th scope="col">Close</th>
+            {% if session_comments_exist %}
+            <th scope="col"></th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+            <tr>
+              <td>{{s.opening_time|date:"l"}}</td>
+              <td>{{s.opening_time|date:"H:i"}}</td>
+              <td>{{s.closing_time|date:"H:i"}}</td>
+              {% if session_comments_exist %}
+              <td>{{s.comment}}</td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     {% else %}
-    <p>The event is over!</p>
+      <h1>Event over</h1>
+      <p>Thank you for your patronage, the bars are now closed for this year.</p>
+      <p><a href="https://emfcamp.org" class="button">Find about our next event</a></p>
     {% endif %}
   </div>
-
   <div>
     <h1>Event progress</h1>
     <div>
@@ -98,7 +92,16 @@
     <ul>
       <li><a href="https://github.com/sde1000/quicktill">The till software</a></li>
       <li><a href="https://github.com/emfcamp/emftillweb">This web service</a></li>
-      <li><a href="https://github.com/sde1000/till-boot">The display boards</a> boot over the network and fetch <a href="{% url "display" %}">this page</a></li>
+      <li><a href="https://github.com/sde1000/till-boot">The display boards</a> boot over the network and fetch various pages:
+	<ul>
+	  <li><a href="{% url "display" %}">Carousel</a></li>
+{% comment %}
+	  <li><a href="{% url "barboard" %}?line=Tap 1&line=Tap 2&line=Tap 3&line=Tap 4&line=Tap 5&line=Tap 6">Left-hand bank of keg taps</a></li>
+	  <li><a href="{% url "barboard" %}?line=Tap 1&line=Tap 2&line=Tap 3&line=Tap 4&line=Tap 5&line=Tap 6">Right-hand bank of keg taps</a></li>
+{% endcomment %}
+	  <li><a href="{% url "cellarboard" "Bar"%}">Bar cellar status</a></li>
+	  <li><a href="{% url "cellarboard" "Null Sector"%}">Null Sector cellar status</a></li>
+	</ul>
       <li>The tap label tablets are running <a href="{% url "tapboard" %}">this PWA</a></li>
     </ul>
 

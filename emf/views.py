@@ -278,6 +278,22 @@ def pricelist(request):
             })
 
 
+def product(request, stocktypeid):
+    with tillsession() as s:
+        stocktype = s.get(StockType, stocktypeid)
+
+        if not stocktype:
+            raise Http404
+
+        return render(
+            request, "emf/product.html",
+            context={
+                "product": stocktype,
+                "key": f"stocktype/{stocktype.id}",
+                "websocket_address": websocket_address(request),
+            })
+
+
 def tapboard(request):
     return render(request, "emf/tapboard.html", context={
         "websocket_address": websocket_address(request),

@@ -7,8 +7,8 @@
 {% endblock %}
 
 {% block heading %}
-  <a class="logo" href="/"><img src="/static/emf/img/logo.svg"></a>
-  <h1>Price List</h1>
+<a class="logo" href="/"><img src="/static/emf/img/logo.svg"></a>
+<h1>Price List</h1>
 {% endblock %}
 
 {% block content %}
@@ -42,44 +42,30 @@
   </div>
 </template>
 
-<template id="location_robotarms">
-  <span class="location robotarms">Robot Arms</span>
-</template>
-
-<template id="location_cybar">
-  <span class="location cybar">Cybar</span>
-</template>
-
-<template id="location_secretbar">
-  <span class="location secretbar">Secret bar</span>
-</template>
-
 <div class="products">
   <div class="product head">
     <div class="name">Name</div>
     <div class="abv">ABV</div>
     <div class="price">Price</div>
     <div class="locations">Locations</div>
-    <div class="stock">Stock</div>
+    <div class="stock">Total Stock</div>
   </div>
 
   {% for p in products %}
-    {% ifchanged p.department.description %}
-      <h2>{{p.department.description}}</h2>
-    {% endifchanged %}
-    <div class="product" data-stocktypekey="stocktype/{{p.id}}">
-      <div class="name">{{ p.manufacturer }} {{ p.name }}</div>
-      <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
-      <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
-      <div class="locations"></div>
-      <div class="stock"></div>
-    </div>
+  {% ifchanged p.department.description %}
+  <h2>{{p.department.description}}</h2>
+  {% endifchanged %}
+  <a href="{% url "product" p.id %}" class="product item" data-stocktypekey="stocktype/{{p.id}}">
+    <div class="name">{{ p.manufacturer }} {{ p.name }}</div>
+    <div class="abv">{% if p.abv != None %}{{ p.abv }}%{% endif %}</div>
+    <div class="price">£{{ p.saleprice }}/{{ p.unit.item_name }}</div>
+    <div class="locations"></div>
+    <div class="stock"></div>
+  </a>
   {% endfor %}
 </div>
 
-<div id="connectionStatus" class="connection-status">
-  Connection lost
-</div>
+<div id="connectionStatus" class="connection-status">Connection Lost</div>
 
 <script type="text/javascript">
   function abv_to_string(abv) {
@@ -97,62 +83,49 @@
       const connectionStatus = document.getElementById("connectionStatus");
       const client = TillWebClient("{{websocket_address}}", false);
       client.onConnect(function () {
-	  connectionStatus.classList.remove("disconnected");
-	  connectionStatus.classList.add("connected");
+          connectionStatus.classList.remove("disconnected");
+          connectionStatus.classList.add("connected");
       });
       client.onDisconnect(function () {
-	  connectionStatus.classList.remove("connected");
-	  connectionStatus.classList.add("disconnected");
+          connectionStatus.classList.remove("connected");
+          connectionStatus.classList.add("disconnected");
       });
 
       const stocktypes = document.querySelectorAll("[data-stocktypekey]");
       const lastfew = get_template("stock_lastfew");
       const low = get_template("stock_low");
       const plenty = get_template("stock_plenty");
-      const loc_robotarms = get_template("location_robotarms");
-      const loc_cybar = get_template("location_cybar");
-      const loc_secretbar = get_template("location_secretbar");
 
       stocktypes.forEach(function (product) {
-	  const key = product.dataset.stocktypekey;
-	  client.onKey(key, function (message) {
-	      const elems = product.children;
-	      const stock = elems[4];
-	      updateText(elems[0], `${message.manufacturer} ${message.name}`);
-	      updateText(elems[1], abv_to_string(message.abv));
-	      updateText(elems[2], `£${message.price}/${message.sale_unit_name}`);
+          const key = product.dataset.stocktypekey;
+          client.onKey(key, function (message) {
+              const elems = product.children;
+              const stock = elems[4];
+              updateText(elems[0], `${message.manufacturer} ${message.name}`);
+              updateText(elems[1], abv_to_string(message.abv));
+              updateText(elems[2], `£${message.price}/${message.sale_unit_name}`);
+              const locations = elems[3].cloneNode();
+              for (const stockline of message.stocklines) {
+                  const span = document.createElement('span');
+                  span.classList.add('location');
+                  span.classList.add(stockline.location_display.slug);
+                  span.innerText = stockline.location_display.name;
+                  locations.appendChild(span);
+              }
+              updateNode(elems[3], locations);
 
-	      const locnames = new Set();
-	      for (const stockline of message.stocklines) {
-		  locnames.add(stockline.location_display);
-	      }
-	      const locations = elems[3].cloneNode();
-	      if (locnames.has("Robot Arms")) {
-		  locations.appendChild(document.importNode(
-		      loc_robotarms, true));
-	      }
-	      if (locnames.has("Cybar")) {
-		  locations.appendChild(document.importNode(
-		      loc_cybar, true));
-	      }
-	      if (locnames.has("Secret Bar")) {
-		  locations.appendChild(document.importNode(
-		      loc_secretbar, true));
-	      }
-	      updateNode(elems[3], locations);
+              const remain_pct = (
+                  message.base_units_remaining / message.base_units_bought
+                      * 100);
 
-	      const remain_pct = (
-		  message.base_units_remaining / message.base_units_bought
-		      * 100);
-
-	      if (remain_pct < 5.0) {
-		  updateNode(stock, lastfew);
-	      } else if (remain_pct < 15.0) {
-		  updateNode(stock, low);
-	      } else {
-		  updateNode(stock, plenty);
-	      }
-	  });
+              if (remain_pct < 5.0) {
+                  updateNode(stock, lastfew);
+              } else if (remain_pct < 15.0) {
+                  updateNode(stock, low);
+              } else {
+                  updateNode(stock, plenty);
+              }
+          });
       });
   });
 </script>
