@@ -7,7 +7,6 @@ from hmac import compare_digest
 
 import sqlalchemy
 from django.conf import settings
-from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from quicktill.models import (
@@ -146,21 +145,6 @@ class InvalidQuantity(KioskOrderError):
 class TooManyItems(KioskOrderError):
     status_code = 400
     code = "too-many-items"
-
-
-class RateLimited(KioskOrderError):
-    status_code = 429
-    code = "rate-limited"
-
-    def __init__(self, message, *, retry_after=None):
-        super().__init__(message)
-        self.retry_after = retry_after
-
-    def as_dict(self):
-        d = super().as_dict()
-        if self.retry_after is not None:
-            d["retry_after"] = self.retry_after
-        return d
 
 
 class InvalidStockLine(KioskOrderError):
@@ -590,13 +574,6 @@ def _bearer_token(request):
     return token
 
 
-def _client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR", "unknown")
-
-
 def _service_user():
     return getattr(settings, "EMF_KIOSK_USER", "")
 
@@ -608,7 +585,6 @@ def _kiosk_identity():
         "user": _service_user(),
         "timeout": default_timeout,
         "max_items": None,
-        "rate_limit_seconds": None,
     }
 
 
@@ -694,19 +670,6 @@ def orders(request):
     if response:
         return response
 
-    rate_limit_seconds = auth.get("rate_limit_seconds")
-    if rate_limit_seconds:
-        ip = _client_ip(request)
-        cache_key = f"order-ratelimit:{auth['source']}:{ip}"
-        if cache.get(cache_key):
-            retry_after = rate_limit_seconds
-            err = RateLimited(
-                f"Too many orders. Try again in {retry_after} seconds.",
-                retry_after=retry_after)
-            resp = JsonResponse(err.as_dict(), status=err.status_code)
-            resp["Retry-After"] = str(retry_after)
-            return resp
-
     with tillsession() as s:
         try:
             user = _auth_user(s, auth.get("user"))
@@ -719,8 +682,6 @@ def orders(request):
                 timeout=auth["timeout"],
                 max_items=auth.get("max_items"))
             s.commit()
-            if rate_limit_seconds:
-                cache.set(cache_key, True, rate_limit_seconds)
             return JsonResponse(result, status=201)
         except KioskOrderError as e:
             s.rollback()
