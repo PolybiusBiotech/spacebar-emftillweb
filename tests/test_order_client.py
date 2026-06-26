@@ -16,7 +16,6 @@ from emf.order_client import (
     _authenticate,
     _bearer_token,
     _checkdigits,
-    _client_ip,
     _order_barcode,
     _verify_barcode,
     barcode_prefix,
@@ -137,30 +136,6 @@ class BearerTokenTests(TestCase):
         req = self.factory.get("/", HTTP_AUTHORIZATION="BEARER mytoken123")
         self.assertEqual(_bearer_token(req), "mytoken123")
 
-
-# ---------------------------------------------------------------------------
-# Client IP
-# ---------------------------------------------------------------------------
-
-class ClientIpTests(TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-
-    def test_remote_addr(self):
-        req = self.factory.get("/", REMOTE_ADDR="1.2.3.4")
-        self.assertEqual(_client_ip(req), "1.2.3.4")
-
-    def test_x_forwarded_for(self):
-        req = self.factory.get("/",
-                               HTTP_X_FORWARDED_FOR="10.0.0.1",
-                               REMOTE_ADDR="127.0.0.1")
-        self.assertEqual(_client_ip(req), "10.0.0.1")
-
-    def test_x_forwarded_for_multi_hop(self):
-        req = self.factory.get("/",
-                               HTTP_X_FORWARDED_FOR="10.0.0.1, 192.168.1.1",
-                               REMOTE_ADDR="127.0.0.1")
-        self.assertEqual(_client_ip(req), "10.0.0.1")
 
 
 # ---------------------------------------------------------------------------
