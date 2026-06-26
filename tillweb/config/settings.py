@@ -170,7 +170,7 @@ if oidc_config:
 
 if oidc_config:
     if "configuration_url" in oidc_config:
-        cfg = requests.get(oidc_config["configuration_url"]).json()
+        cfg = requests.get(oidc_config["configuration_url"], timeout=10).json()
     else:
         cfg = {}
     OIDC_OP_AUTHORIZATION_ENDPOINT = \
@@ -255,3 +255,4 @@ TILLWEB_LOGIN_REQUIRED = True
 TILLWEB_DEFAULT_ACCESS = "M"
 TILLWEB_MONEY_SYMBOL = till_config.get("currency_symbol", "")
 EMF_KIOSK_ORDER_TOKENS = kiosk_config.get("tokens", {})
+EMF_KIOSK_BARCODE_SECRET = kiosk_config.get("barcode_secret", "")
