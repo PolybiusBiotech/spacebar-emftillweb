@@ -357,6 +357,50 @@ class CancelViewTests(TestCase):
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(json.loads(resp.content)["error"], "not-found")
 
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN,
+                       EMF_KIOSK_BARCODE_SECRET=SECRET,
+                       EMF_KIOSK_CANCEL_MODE="delete")
+    def test_delete_mode_deletes_record(self):
+        trans = MagicMock(id=42, closed=False, payments=[], user=None)
+        mock_s = MagicMock()
+        mock_s.query.return_value.filter.return_value.options.return_value \
+            .with_for_update.return_value.one_or_none.return_value = trans
+        with _mock_tillsession(mock_s), \
+                patch("emf.order_client._read_meta",
+                      return_value={"order_ref": "42", "location": LOCATION}), \
+                patch("emf.order_client._fallback_log_user", return_value=None):
+            req = self.factory.delete(
+                "/api/kiosk/orders/42",
+                HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
+                HTTP_ORDER_BARCODE=_order_barcode(42))
+            resp = order_detail(req, "42")
+        self.assertEqual(resp.status_code, 200)
+        mock_s.delete.assert_called_once_with(trans)
+
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN,
+                       EMF_KIOSK_BARCODE_SECRET=SECRET,
+                       EMF_KIOSK_CANCEL_MODE="void")
+    def test_void_mode_voids_and_keeps_record(self):
+        line = MagicMock()
+        trans = MagicMock(id=42, closed=False, payments=[], user=None,
+                          lines=[line])
+        mock_s = MagicMock()
+        mock_s.query.return_value.filter.return_value.options.return_value \
+            .with_for_update.return_value.one_or_none.return_value = trans
+        with _mock_tillsession(mock_s), \
+                patch("emf.order_client._read_meta",
+                      return_value={"order_ref": "42", "location": LOCATION}), \
+                patch("emf.order_client._fallback_log_user", return_value=None):
+            req = self.factory.delete(
+                "/api/kiosk/orders/42",
+                HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
+                HTTP_ORDER_BARCODE=_order_barcode(42))
+            resp = order_detail(req, "42")
+        self.assertEqual(resp.status_code, 200)
+        line.void.assert_called_once()       # the line was voided
+        mock_s.delete.assert_not_called()    # the record was NOT deleted
+        self.assertTrue(trans.closed)        # transaction closed after voiding
+
 
 # ---------------------------------------------------------------------------
 # retrieve one: GET /api/kiosk/orders/<ref>

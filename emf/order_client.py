@@ -578,6 +578,12 @@ def _service_user():
     return getattr(settings, "EMF_KIOSK_USER", "")
 
 
+def _cancel_mode():
+    """Order cancellation behaviour: "delete" (default) removes the record;
+    "void" keeps it and adds voiding lines that show on the till void report."""
+    return getattr(settings, "EMF_KIOSK_CANCEL_MODE", "delete")
+
+
 def _kiosk_identity():
     """Return the identity of the kiosk service for logging and auditing."""
     return {
@@ -738,6 +744,20 @@ def _order_get_one(request, order_ref, auth):
             return _json_error(503, "database-error", str(e))
 
 
+def _void_transaction(session, trans, user, source):
+    """Void every line of an unpaid order instead of deleting it.
+
+    The voiding lines (transcode 'V') appear on the till's void report, and the
+    now zero-balance transaction is closed. Selected by
+    EMF_KIOSK_CANCEL_MODE="void".
+    """
+    # Snapshot the lines first: tl.void() adds a new Transline to trans.lines,
+    # so iterating trans.lines directly would mutate the collection mid-loop.
+    voidlines = [tl.void(trans, user, source) for tl in list(trans.lines)]
+    session.add_all([v for v in voidlines if v is not None])
+    trans.closed = True
+
+
 def _order_cancel(request, order_ref, auth):
     """Cancel an unpaid kiosk order.
 
@@ -789,7 +809,10 @@ def _order_cancel(request, order_ref, auth):
                         f"Cancelled kiosk order {trans.notes} "
                         f"(transaction {trans.id})")))
 
-            s.delete(trans)
+            if _cancel_mode() == "void":
+                _void_transaction(s, trans, loguser, auth["source"])
+            else:
+                s.delete(trans)
             s.flush()
             s.commit()
             return JsonResponse({"ok": True, "order_ref": order_ref})
