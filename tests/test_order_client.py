@@ -21,7 +21,6 @@ from emf.order_client import (
     _verify_barcode,
     barcode_prefix,
     default_timeout,
-    expire,
     order_detail,
     orders,
 )
@@ -326,7 +325,6 @@ class OrdersViewTests(TestCase):
         self.assertEqual(resp.status_code, 201)
         data = json.loads(resp.content)
         self.assertEqual(data["order_ref"], "42")
-        self.assertIn("expired_orders", data)
 
 
 # ---------------------------------------------------------------------------
@@ -411,51 +409,3 @@ class OrderDetailGetTests(TestCase):
             resp = order_detail(req, "9999")
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(json.loads(resp.content)["error"], "not-found")
-
-
-# ---------------------------------------------------------------------------
-# expire view
-# ---------------------------------------------------------------------------
-
-class ExpireViewTests(TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-
-    def test_get_not_allowed(self):
-        req = self.factory.get("/api/kiosk/orders/expire.json")
-        resp = expire(req)
-        self.assertEqual(resp.status_code, 405)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
-    def test_missing_location(self):
-        req = self.factory.post("/api/kiosk/orders/expire.json",
-                                data=json.dumps({}),
-                                content_type="application/json",
-                                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        resp = expire(req)
-        self.assertEqual(resp.status_code, 400)
-        self.assertEqual(json.loads(resp.content)["error"], "missing-location")
-
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
-    def test_no_auth(self):
-        req = self.factory.post("/api/kiosk/orders/expire.json",
-                                data=json.dumps({"location": LOCATION}),
-                                content_type="application/json")
-        resp = expire(req)
-        self.assertEqual(resp.status_code, 401)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
-    def test_success(self):
-        with _mock_tillsession():
-            with patch("emf.order_client.expire_orders", return_value=[]):
-                with patch("emf.order_client._auth_user", return_value=None):
-                    req = self.factory.post(
-                        "/api/kiosk/orders/expire.json",
-                        data=json.dumps({"location": LOCATION}),
-                        content_type="application/json",
-                        HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-                    resp = expire(req)
-        self.assertEqual(resp.status_code, 200)
-        data = json.loads(resp.content)
-        self.assertEqual(data["location"], LOCATION)
-        self.assertEqual(data["expired_orders"], [])
