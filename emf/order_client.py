@@ -1,3 +1,11 @@
+"""Kiosk order API: create, retrieve, cancel and expire unpaid orders.
+
+Backs the /api/kiosk/orders endpoints. An order is a quicktill Transaction
+tagged with kiosk metadata; its transaction id is the order ref, and an HMAC
+barcode lets a kiosk prove ownership when cancelling. Callers authenticate
+with a single shared bearer token.
+"""
+
 import datetime
 import hashlib
 import hmac as _hmac
@@ -66,8 +74,9 @@ def _verify_barcode(barcode):
 
 
 def _is_soft(department):
-    """True when the department has a capped ABV ≤ 0.5% — no age check needed."""
-    return department.maxabv is not None and department.maxabv <= Decimal("0.5")
+    """True when the department's ABV is capped ≤0.5% (no age check)."""
+    return (department.maxabv is not None
+            and department.maxabv <= Decimal("0.5"))
 
 
 class KioskOrderError(Exception):
@@ -97,6 +106,11 @@ class NoActiveSession(KioskOrderError):
 class UnknownStockLine(KioskOrderError):
     status_code = 404
     code = "unknown-stockline"
+
+
+class OrderNotFound(KioskOrderError):
+    status_code = 404
+    code = "not-found"
 
 
 class WrongLocation(KioskOrderError):
@@ -323,13 +337,20 @@ def _fallback_log_user(session, user):
     if user:
         return user
     return session.query(User)\
-        .filter(User.enabled == True)\
+        .filter(User.enabled.is_(True))\
         .order_by(User.superuser.desc(), User.id)\
         .first() or session.query(User).order_by(User.id).first()
 
 
 def place_order(session, *, location, items, source="kiosk", user=None,
                 now=None, timeout=default_timeout, max_items=None):
+    """Create an unpaid kiosk order transaction for the given items.
+
+    Validates each stockline against the location and available stock, then
+    builds a Transaction with the priced lines and kiosk metadata (order ref,
+    expiry, soft_only) and returns the order-response dict. Raises a
+    KioskOrderError subclass on any validation failure.
+    """
     current_session = Session.current(session)
     if current_session is None:
         raise NoActiveSession("No till session is active.")
@@ -415,6 +436,11 @@ def place_order(session, *, location, items, source="kiosk", user=None,
 
 def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
                   user=None):
+    """Delete unpaid kiosk orders past expiry; returns those removed.
+
+    Only touches transactions carrying kiosk metadata; skips paid orders and
+    those in use at a register. location=None sweeps every location.
+    """
     now = now or datetime.datetime.now()
     loguser = _fallback_log_user(session, user)
     if loguser is None:
@@ -423,7 +449,7 @@ def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
     rows = session.query(TransactionMeta)\
         .filter(TransactionMeta.key == order_meta_key)\
         .join(Transaction)\
-        .filter(Transaction.closed == False)\
+        .filter(Transaction.closed.is_(False))\
         .options(joinedload(TransactionMeta.transaction)
                  .joinedload(Transaction.payments),
                  joinedload(TransactionMeta.transaction)
@@ -465,13 +491,13 @@ def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
 
 
 def mark_collected(session, *, order_ref, location, source="kiosk", user=None):
-    """Mark a kiosk order as collected — removes it from future poll results."""
+    """Mark a kiosk order collected; drops it from future poll results."""
     trans = session.get(Transaction, int(order_ref))
     if trans is None:
-        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+        raise OrderNotFound(f"Order {order_ref} not found.")
     meta = _read_meta(trans)
     if meta is None or meta.get("location") != location:
-        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+        raise OrderNotFound(f"Order {order_ref} not found.")
     if meta.get("collected"):
         return
     meta["collected"] = True
@@ -487,13 +513,13 @@ def mark_collected(session, *, order_ref, location, source="kiosk", user=None):
 
 def mark_rejected(session, *, order_ref, location, source="kiosk", user=None,
                   terminal="kiosk"):
-    """Mark a kiosk order as ID-rejected — blocks re-scan and logs to refusals."""
+    """Mark a kiosk order ID-rejected; blocks re-scan, logs to refusals."""
     trans = session.get(Transaction, int(order_ref))
     if trans is None:
-        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+        raise OrderNotFound(f"Order {order_ref} not found.")
     meta = _read_meta(trans)
     if meta is None or meta.get("location") != location:
-        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+        raise OrderNotFound(f"Order {order_ref} not found.")
     if meta.get("rejected"):
         return
     meta["rejected"] = True
@@ -579,8 +605,9 @@ def _service_user():
 
 
 def _cancel_mode():
-    """Order cancellation behaviour: "delete" (default) removes the record;
-    "void" keeps it and adds voiding lines that show on the till void report."""
+    """Order cancellation mode: "delete" (default) removes the record;
+    "void" keeps it with voiding lines on the till's void report.
+    """
     return getattr(settings, "EMF_KIOSK_CANCEL_MODE", "delete")
 
 
@@ -659,6 +686,7 @@ def _orders_get(request):
 
 @csrf_exempt
 def orders(request):
+    """Order collection endpoint: GET lists live orders, POST creates one."""
     if request.method == "GET":
         return _orders_get(request)
     if request.method != "POST":
@@ -793,12 +821,14 @@ def _order_cancel(request, order_ref, auth):
                 return _json_error(404, "not-found", "Order not found.")
 
             if trans.closed or trans.payments:
-                return _json_error(409, "already-paid",
-                                   "Order has already been paid and cannot be cancelled.")
+                return _json_error(
+                    409, "already-paid",
+                    "Order has already been paid and cannot be cancelled.")
 
             if trans.user is not None:
-                return _json_error(409, "order-in-use",
-                                   "Order is currently being processed at the till.")
+                return _json_error(
+                    409, "order-in-use",
+                    "Order is currently being processed at the till.")
 
             loguser = _fallback_log_user(s, _auth_user(s, auth.get("user")))
             if loguser:
@@ -824,6 +854,7 @@ def _order_cancel(request, order_ref, auth):
 
 @csrf_exempt
 def collect(request, order_ref):
+    """Mark an order collected (POST). Location comes from ?location=."""
     if request.method != "POST":
         return _json_error(405, "method-not-allowed", "Use POST.")
 
@@ -856,6 +887,7 @@ def collect(request, order_ref):
 
 @csrf_exempt
 def reject(request, order_ref):
+    """Mark an order ID-rejected (POST). Location comes from ?location=."""
     if request.method != "POST":
         return _json_error(405, "method-not-allowed", "Use POST.")
 
