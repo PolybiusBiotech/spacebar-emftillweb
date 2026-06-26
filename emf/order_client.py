@@ -9,10 +9,12 @@ import qrcode
 
 import sqlalchemy
 from django.conf import settings
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from quicktill.models import (
     LogEntry,
+    RefusalsLog,
     Session,
     StockLine,
     StockOut,
@@ -47,6 +49,23 @@ def _checkdigits(trans_id):
 
 def _order_barcode(trans_id):
     return f"{barcode_prefix}{trans_id}{_checkdigits(trans_id)}"
+
+
+def _verify_barcode(barcode):
+    """Return transaction_id if barcode HMAC is valid, else None."""
+    if not barcode.startswith(barcode_prefix):
+        return None
+    rest = barcode[len(barcode_prefix):]   # "{trans_id}{3-digit check}"
+    if len(rest) < 4:
+        return None
+    check, trans_id_str = rest[-3:], rest[:-3]
+    try:
+        trans_id = int(trans_id_str)
+    except ValueError:
+        return None
+    if not compare_digest(check, _checkdigits(trans_id)):
+        return None
+    return trans_id
 
 
 def _qr_rows(data):
@@ -134,6 +153,26 @@ class InsufficientStock(KioskOrderError):
 
 class InvalidQuantity(KioskOrderError):
     code = "invalid-quantity"
+
+
+class TooManyItems(KioskOrderError):
+    status_code = 400
+    code = "too-many-items"
+
+
+class RateLimited(KioskOrderError):
+    status_code = 429
+    code = "rate-limited"
+
+    def __init__(self, message, *, retry_after=None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+    def as_dict(self):
+        d = super().as_dict()
+        if self.retry_after is not None:
+            d["retry_after"] = self.retry_after
+        return d
 
 
 class InvalidStockLine(KioskOrderError):
@@ -314,7 +353,7 @@ def _fallback_log_user(session, user):
 
 
 def place_order(session, *, location, items, source="kiosk", user=None,
-                now=None, timeout=default_timeout):
+                now=None, timeout=default_timeout, max_items=None):
     current_session = Session.current(session)
     if current_session is None:
         raise NoActiveSession("No till session is active.")
@@ -327,6 +366,13 @@ def place_order(session, *, location, items, source="kiosk", user=None,
         stockline_id = _read_stockline_id(item.get("stockline_id"))
         qty = _read_qty(item.get("qty", 1))
         quantities[stockline_id] = quantities.get(stockline_id, 0) + qty
+
+    if max_items is not None:
+        total_qty = sum(quantities.values())
+        if total_qty > max_items:
+            raise TooManyItems(
+                f"Orders via this token are limited to {max_items} item(s). "
+                f"Requested {total_qty}.")
 
     plans = []
     for stockline_id, qty in sorted(quantities.items()):
@@ -442,6 +488,49 @@ def expire_orders(session, *, location=None, now=None, source="kiosk-expiry",
     return expired
 
 
+def mark_collected(session, *, order_ref, location, source="kiosk", user=None):
+    """Mark a kiosk order as collected — removes it from future poll results."""
+    trans = session.get(Transaction, int(order_ref))
+    if trans is None:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    meta = _read_meta(trans)
+    if meta is None or meta.get("location") != location:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    if meta.get("collected"):
+        return
+    meta["collected"] = True
+    _set_meta(trans, meta)
+    loguser = _fallback_log_user(session, user)
+    if loguser:
+        session.add(LogEntry(
+            source=source,
+            loguser=loguser,
+            description=f"Kiosk order {order_ref} marked collected"))
+    session.flush()
+
+
+def mark_rejected(session, *, order_ref, location, source="kiosk", user=None,
+                  terminal="kiosk"):
+    """Mark a kiosk order as ID-rejected — blocks re-scan and logs to refusals."""
+    trans = session.get(Transaction, int(order_ref))
+    if trans is None:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    meta = _read_meta(trans)
+    if meta is None or meta.get("location") != location:
+        raise KioskOrderError(404, "not-found", f"Order {order_ref} not found.")
+    if meta.get("rejected"):
+        return
+    meta["rejected"] = True
+    _set_meta(trans, meta)
+    loguser = _fallback_log_user(session, user)
+    if loguser:
+        session.add(RefusalsLog(
+            user=loguser,
+            terminal=terminal,
+            details=f"ID rejected via kiosk (order {order_ref})"))
+    session.flush()
+
+
 def list_orders(session, *, location):
     """Return active kiosk orders for a location.
 
@@ -470,9 +559,12 @@ def list_orders(session, *, location):
             continue
         if meta.get("location") != location:
             continue
+        if meta.get("collected"):
+            continue
         lines, total = _order_lines(trans)
         orders.append({
             "order_ref": meta["order_ref"],
+            "order_name": meta["order_ref"],
             "transaction_id": trans.id,
             "created_at": meta.get("created_at"),
             "expires_at": meta.get("expires_at"),
@@ -506,12 +598,21 @@ def _bearer_token(request):
     return token
 
 
+def _client_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "unknown")
+
+
 def _normalise_token_entry(entry):
     if isinstance(entry, str):
         return {
             "locations": [entry],
             "source": "kiosk",
             "timeout": default_timeout,
+            "max_items": None,
+            "rate_limit_seconds": None,
         }
     locations = entry.get("locations", entry.get("location", []))
     if isinstance(locations, str):
@@ -519,12 +620,36 @@ def _normalise_token_entry(entry):
     raw_timeout = entry.get("timeout")
     timeout = (datetime.timedelta(seconds=int(raw_timeout))
                if raw_timeout is not None else default_timeout)
+    raw_rate = entry.get("rate_limit")
+    rate_limit_seconds = int(raw_rate) if raw_rate is not None else None
+    raw_max = entry.get("max_items")
+    max_items = int(raw_max) if raw_max is not None else None
     return {
         "locations": list(locations),
         "source": entry.get("source", "kiosk"),
         "user": entry.get("user"),
         "timeout": timeout,
+        "max_items": max_items,
+        "rate_limit_seconds": rate_limit_seconds,
     }
+
+
+def _authenticate_token_only(request):
+    """Authenticate bearer token without location check (for cancel — barcode proves ownership)."""
+    configured = _token_config()
+    if not configured:
+        return None, _json_error(
+            503, "kiosk-api-not-configured",
+            "Kiosk API tokens have not been configured.")
+    supplied = _bearer_token(request)
+    if not supplied:
+        return None, _json_error(
+            401, "missing-token",
+            "Supply a bearer token in the Authorization header.")
+    for token, entry in configured.items():
+        if compare_digest(str(token), supplied):
+            return _normalise_token_entry(entry), None
+    return None, _json_error(401, "invalid-token", "Bearer token not valid.")
 
 
 def _authenticate(request, location):
@@ -599,6 +724,19 @@ def orders(request):
     if response:
         return response
 
+    rate_limit_seconds = auth.get("rate_limit_seconds")
+    if rate_limit_seconds:
+        ip = _client_ip(request)
+        cache_key = f"order-ratelimit:{auth['source']}:{ip}"
+        if cache.get(cache_key):
+            retry_after = rate_limit_seconds
+            err = RateLimited(
+                f"Too many orders. Try again in {retry_after} seconds.",
+                retry_after=retry_after)
+            resp = JsonResponse(err.as_dict(), status=err.status_code)
+            resp["Retry-After"] = str(retry_after)
+            return resp
+
     with tillsession() as s:
         try:
             user = _auth_user(s, auth.get("user"))
@@ -613,14 +751,85 @@ def orders(request):
                 items=payload.get("items", []),
                 source=auth["source"],
                 user=user,
-                timeout=auth["timeout"])
+                timeout=auth["timeout"],
+                max_items=auth.get("max_items"))
             result["expired_orders"] = expired
             s.commit()
-            return JsonResponse(
-                result, status=201 if result["created"] else 200)
+            if rate_limit_seconds:
+                cache.set(cache_key, True, rate_limit_seconds)
+            return JsonResponse(result, status=201)
         except KioskOrderError as e:
             s.rollback()
             return JsonResponse(e.as_dict(), status=e.status_code)
+        except sqlalchemy.exc.OperationalError as e:
+            s.rollback()
+            return _json_error(503, "database-error", str(e))
+
+
+@csrf_exempt
+def cancel(request):
+    if request.method != "POST":
+        return _json_error(405, "method-not-allowed", "Use POST.")
+
+    payload = _request_json(request)
+    if payload is None:
+        return _json_error(400, "invalid-json", "Request body is not JSON.")
+
+    barcode = payload.get("barcode", "")
+    order_ref = payload.get("order_ref", "")
+
+    auth, response = _authenticate_token_only(request)
+    if response:
+        return response
+
+    trans_id = _verify_barcode(barcode)
+    if trans_id is None:
+        return _json_error(403, "bad-barcode", "Barcode checksum is invalid.")
+
+    with tillsession() as s:
+        try:
+            trans = s.query(Transaction)\
+                .filter(Transaction.id == trans_id)\
+                .options(
+                    joinedload(Transaction.meta),
+                    joinedload(Transaction.payments),
+                )\
+                .with_for_update()\
+                .one_or_none()
+
+            if not trans:
+                return _json_error(404, "not-found", "Order not found.")
+
+            meta = _read_meta(trans)
+            if not meta:
+                return _json_error(404, "not-found", "Order not found.")
+
+            if meta.get("order_ref") != order_ref:
+                return _json_error(403, "bad-barcode",
+                                   "Order reference does not match barcode.")
+
+            if trans.closed or trans.payments:
+                return _json_error(409, "already-paid",
+                                   "Order has already been paid and cannot be cancelled.")
+
+            if trans.user is not None:
+                return _json_error(409, "order-in-use",
+                                   "Order is currently being processed at the till.")
+
+            loguser = _fallback_log_user(s, _auth_user(s, auth.get("user")))
+            if loguser:
+                s.add(LogEntry(
+                    source=auth["source"],
+                    loguser=loguser,
+                    description=(
+                        f"Badge cancelled kiosk order {trans.notes} "
+                        f"(transaction {trans.id})")))
+
+            s.delete(trans)
+            s.flush()
+            s.commit()
+            return JsonResponse({"ok": True, "order_ref": order_ref})
+
         except sqlalchemy.exc.OperationalError as e:
             s.rollback()
             return _json_error(503, "database-error", str(e))
@@ -655,3 +864,68 @@ def expire(request):
             "location": location,
             "expired_orders": expired,
         })
+
+
+@csrf_exempt
+def collect(request, order_ref):
+    if request.method != "POST":
+        return _json_error(405, "method-not-allowed", "Use POST.")
+
+    auth, response = _authenticate_token_only(request)
+    if response:
+        return response
+
+    location = auth.get("locations", [None])[0]
+    if not location:
+        return _json_error(400, "missing-location", "Token has no location.")
+
+    with tillsession() as s:
+        try:
+            user = _auth_user(s, auth.get("user"))
+            mark_collected(
+                s,
+                order_ref=order_ref,
+                location=location,
+                source=auth["source"],
+                user=user)
+            s.commit()
+            return JsonResponse({"ok": True, "order_ref": order_ref})
+        except KioskOrderError as e:
+            s.rollback()
+            return JsonResponse(e.as_dict(), status=e.status_code)
+        except (ValueError, sqlalchemy.exc.OperationalError) as e:
+            s.rollback()
+            return _json_error(400, "bad-request", str(e))
+
+
+@csrf_exempt
+def reject(request, order_ref):
+    if request.method != "POST":
+        return _json_error(405, "method-not-allowed", "Use POST.")
+
+    auth, response = _authenticate_token_only(request)
+    if response:
+        return response
+
+    location = auth.get("locations", [None])[0]
+    if not location:
+        return _json_error(400, "missing-location", "Token has no location.")
+
+    with tillsession() as s:
+        try:
+            user = _auth_user(s, auth.get("user"))
+            mark_rejected(
+                s,
+                order_ref=order_ref,
+                location=location,
+                source=auth["source"],
+                user=user,
+                terminal=auth["source"])
+            s.commit()
+            return JsonResponse({"ok": True, "order_ref": order_ref})
+        except KioskOrderError as e:
+            s.rollback()
+            return JsonResponse(e.as_dict(), status=e.status_code)
+        except (ValueError, sqlalchemy.exc.OperationalError) as e:
+            s.rollback()
+            return _json_error(400, "bad-request", str(e))
