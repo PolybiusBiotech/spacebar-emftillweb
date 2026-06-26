@@ -20,9 +20,9 @@ from emf.order_client import (
     _order_barcode,
     _verify_barcode,
     barcode_prefix,
-    cancel,
     default_timeout,
     expire,
+    order_detail,
     orders,
 )
 
@@ -230,7 +230,7 @@ class OrdersViewTests(TestCase):
         self.factory = RequestFactory()
 
     def test_unsupported_method(self):
-        req = self.factory.delete("/api/kiosk/orders.json")
+        req = self.factory.delete("/api/kiosk/orders")
         resp = orders(req)
         self.assertEqual(resp.status_code, 405)
 
@@ -238,7 +238,7 @@ class OrdersViewTests(TestCase):
 
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_missing_location(self):
-        req = self.factory.get("/api/kiosk/orders.json",
+        req = self.factory.get("/api/kiosk/orders",
                                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
         resp = orders(req)
         self.assertEqual(resp.status_code, 400)
@@ -246,7 +246,7 @@ class OrdersViewTests(TestCase):
 
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_no_auth(self):
-        req = self.factory.get("/api/kiosk/orders.json", {"location": LOCATION})
+        req = self.factory.get("/api/kiosk/orders", {"location": LOCATION})
         resp = orders(req)
         self.assertEqual(resp.status_code, 401)
 
@@ -254,7 +254,7 @@ class OrdersViewTests(TestCase):
     def test_get_success(self):
         with _mock_tillsession():
             with patch("emf.order_client.list_orders", return_value=[]) as mock_list:
-                req = self.factory.get("/api/kiosk/orders.json",
+                req = self.factory.get("/api/kiosk/orders",
                                        {"location": LOCATION},
                                        HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
                 resp = orders(req)
@@ -268,7 +268,7 @@ class OrdersViewTests(TestCase):
 
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_invalid_json(self):
-        req = self.factory.post("/api/kiosk/orders.json",
+        req = self.factory.post("/api/kiosk/orders",
                                 data="not json",
                                 content_type="application/json",
                                 HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
@@ -278,7 +278,7 @@ class OrdersViewTests(TestCase):
 
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_missing_location(self):
-        req = self.factory.post("/api/kiosk/orders.json",
+        req = self.factory.post("/api/kiosk/orders",
                                 data=json.dumps({}),
                                 content_type="application/json",
                                 HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
@@ -288,7 +288,7 @@ class OrdersViewTests(TestCase):
 
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_no_auth(self):
-        req = self.factory.post("/api/kiosk/orders.json",
+        req = self.factory.post("/api/kiosk/orders",
                                 data=json.dumps({"location": LOCATION}),
                                 content_type="application/json")
         resp = orders(req)
@@ -315,7 +315,7 @@ class OrdersViewTests(TestCase):
                 with patch("emf.order_client.place_order", return_value=fake_result):
                     with patch("emf.order_client._auth_user", return_value=None):
                         req = self.factory.post(
-                            "/api/kiosk/orders.json",
+                            "/api/kiosk/orders",
                             data=json.dumps({
                                 "location": LOCATION,
                                 "items": [{"stockline_id": 1, "qty": 1}],
@@ -337,52 +337,78 @@ class CancelViewTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
-    def test_get_not_allowed(self):
-        req = self.factory.get("/api/kiosk/orders/cancel.json")
-        resp = cancel(req)
+    def test_unsupported_method(self):
+        req = self.factory.post("/api/kiosk/orders/42")
+        resp = order_detail(req, "42")
         self.assertEqual(resp.status_code, 405)
 
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
-    def test_invalid_json(self):
-        req = self.factory.post("/api/kiosk/orders/cancel.json",
-                                data="bad",
-                                content_type="application/json",
-                                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        resp = cancel(req)
-        self.assertEqual(resp.status_code, 400)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_no_auth(self):
-        req = self.factory.post("/api/kiosk/orders/cancel.json",
-                                data=json.dumps({"barcode": "KIOSK:42123", "order_ref": "42"}),
-                                content_type="application/json")
-        resp = cancel(req)
+        req = self.factory.delete("/api/kiosk/orders/42")
+        resp = order_detail(req, "42")
         self.assertEqual(resp.status_code, 401)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
-    @override_settings(EMF_KIOSK_BARCODE_SECRET=SECRET)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN, EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_bad_barcode(self):
-        req = self.factory.post("/api/kiosk/orders/cancel.json",
-                                data=json.dumps({"barcode": "KIOSK:42000", "order_ref": "42"}),
-                                content_type="application/json",
-                                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        resp = cancel(req)
+        req = self.factory.delete(
+            "/api/kiosk/orders/42",
+            HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
+            HTTP_ORDER_BARCODE="KIOSK:42000")
+        resp = order_detail(req, "42")
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(json.loads(resp.content)["error"], "bad-barcode")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
-    @override_settings(EMF_KIOSK_BARCODE_SECRET=SECRET)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN, EMF_KIOSK_BARCODE_SECRET=SECRET)
+    def test_ref_barcode_mismatch(self):
+        # Valid barcode for order 42, but the URL names a different order.
+        req = self.factory.delete(
+            "/api/kiosk/orders/99",
+            HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
+            HTTP_ORDER_BARCODE=_order_barcode(42))
+        resp = order_detail(req, "99")
+        self.assertEqual(resp.status_code, 403)
+        self.assertEqual(json.loads(resp.content)["error"], "bad-barcode")
+
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN, EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_order_not_found(self):
         barcode = _order_barcode(9999)
         mock_s = MagicMock()
         mock_s.query.return_value.filter.return_value.options.return_value \
             .with_for_update.return_value.one_or_none.return_value = None
         with _mock_tillsession(mock_s):
-            req = self.factory.post("/api/kiosk/orders/cancel.json",
-                                    data=json.dumps({"barcode": barcode, "order_ref": "9999"}),
-                                    content_type="application/json",
-                                    HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-            resp = cancel(req)
+            req = self.factory.delete(
+                "/api/kiosk/orders/9999",
+                HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
+                HTTP_ORDER_BARCODE=barcode)
+            resp = order_detail(req, "9999")
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(json.loads(resp.content)["error"], "not-found")
+
+
+# ---------------------------------------------------------------------------
+# retrieve one: GET /api/kiosk/orders/<ref>
+# ---------------------------------------------------------------------------
+
+class OrderDetailGetTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
+    def test_no_auth(self):
+        req = self.factory.get("/api/kiosk/orders/42")
+        resp = order_detail(req, "42")
+        self.assertEqual(resp.status_code, 401)
+
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
+    def test_not_found(self):
+        mock_s = MagicMock()
+        mock_s.query.return_value.filter.return_value.options.return_value \
+            .one_or_none.return_value = None
+        with _mock_tillsession(mock_s):
+            req = self.factory.get(
+                "/api/kiosk/orders/9999",
+                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
+            resp = order_detail(req, "9999")
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(json.loads(resp.content)["error"], "not-found")
 
