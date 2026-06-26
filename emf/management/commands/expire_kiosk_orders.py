@@ -9,7 +9,8 @@ from emf.tilldb import tillsession
 
 
 class Command(BaseCommand):
-    help = "Expire unpaid kiosk orders whose timeout has passed (run on a schedule)."
+    help = ("Expire unpaid kiosk orders whose timeout has passed "
+            "(run on a schedule).")
 
     def handle(self, *args, **options):
         with tillsession() as s:

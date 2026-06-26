@@ -1,8 +1,9 @@
-"""Tests for emf.order_client — pure functions and view auth paths.
+"""Tests for emf.order_client — pure functions and view paths.
 
-DB-touching business logic (place_order, expire_orders, list_orders, cancel)
-is tested here via mocking tillsession(). For integration tests against a real
-quicktill database see the developer docs.
+DB-touching logic (place_order, list_orders, cancel, collect/reject) is
+exercised by mocking tillsession(). Error paths that need real data (the
+stock validation in place_order) are left to integration tests against a
+quicktill database; see the developer docs.
 """
 
 import datetime
@@ -18,8 +19,10 @@ from emf.order_client import (
     _checkdigits,
     _order_barcode,
     _verify_barcode,
+    OrderNotFound,
     barcode_prefix,
-    default_timeout,
+    mark_collected,
+    mark_rejected,
     order_detail,
     orders,
 )
@@ -98,7 +101,7 @@ class VerifyBarcodeTests(TestCase):
         self.assertIsNone(_verify_barcode("ORDER:9574123"))
 
     def test_too_short_rejected(self):
-        # Need at least 4 chars after prefix (1+ digit trans_id + 3 check digits)
+        # Need at least 4 chars after prefix (trans_id + 3 check digits)
         self.assertIsNone(_verify_barcode(barcode_prefix + "12"))
 
     def test_non_integer_trans_id_rejected(self):
@@ -137,9 +140,8 @@ class BearerTokenTests(TestCase):
         self.assertEqual(_bearer_token(req), "mytoken123")
 
 
-
 # ---------------------------------------------------------------------------
-# _authenticate (location-scoped)
+# _authenticate
 # ---------------------------------------------------------------------------
 
 class AuthenticateTests(TestCase):
@@ -189,7 +191,8 @@ class AuthenticateTests(TestCase):
 def _mock_tillsession(return_value=None):
     """Return a patch for tillsession() that yields return_value."""
     mock_session = MagicMock()
-    mock_session.__enter__ = MagicMock(return_value=return_value or MagicMock())
+    mock_session.__enter__ = MagicMock(
+        return_value=return_value or MagicMock())
     mock_session.__exit__ = MagicMock(return_value=False)
 
     @contextmanager
@@ -227,7 +230,8 @@ class OrdersViewTests(TestCase):
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_success(self):
         with _mock_tillsession():
-            with patch("emf.order_client.list_orders", return_value=[]) as mock_list:
+            with patch("emf.order_client.list_orders",
+                       return_value=[]) as mock_list:
                 req = self.factory.get("/api/kiosk/orders",
                                        {"location": LOCATION},
                                        HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
@@ -285,18 +289,18 @@ class OrdersViewTests(TestCase):
             "slip": {},
         }
         with _mock_tillsession():
-            with patch("emf.order_client.expire_orders", return_value=[]):
-                with patch("emf.order_client.place_order", return_value=fake_result):
-                    with patch("emf.order_client._auth_user", return_value=None):
-                        req = self.factory.post(
-                            "/api/kiosk/orders",
-                            data=json.dumps({
-                                "location": LOCATION,
-                                "items": [{"stockline_id": 1, "qty": 1}],
-                            }),
-                            content_type="application/json",
-                            HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-                        resp = orders(req)
+            with patch("emf.order_client.place_order",
+                       return_value=fake_result):
+                with patch("emf.order_client._auth_user", return_value=None):
+                    req = self.factory.post(
+                        "/api/kiosk/orders",
+                        data=json.dumps({
+                            "location": LOCATION,
+                            "items": [{"stockline_id": 1, "qty": 1}],
+                        }),
+                        content_type="application/json",
+                        HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
+                    resp = orders(req)
         self.assertEqual(resp.status_code, 201)
         data = json.loads(resp.content)
         self.assertEqual(data["order_ref"], "42")
@@ -321,7 +325,8 @@ class CancelViewTests(TestCase):
         resp = order_detail(req, "42")
         self.assertEqual(resp.status_code, 401)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN, EMF_KIOSK_BARCODE_SECRET=SECRET)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN,
+                       EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_bad_barcode(self):
         req = self.factory.delete(
             "/api/kiosk/orders/42",
@@ -331,7 +336,8 @@ class CancelViewTests(TestCase):
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(json.loads(resp.content)["error"], "bad-barcode")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN, EMF_KIOSK_BARCODE_SECRET=SECRET)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN,
+                       EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_ref_barcode_mismatch(self):
         # Valid barcode for order 42, but the URL names a different order.
         req = self.factory.delete(
@@ -342,7 +348,8 @@ class CancelViewTests(TestCase):
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(json.loads(resp.content)["error"], "bad-barcode")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN, EMF_KIOSK_BARCODE_SECRET=SECRET)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN,
+                       EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_order_not_found(self):
         barcode = _order_barcode(9999)
         mock_s = MagicMock()
@@ -367,8 +374,10 @@ class CancelViewTests(TestCase):
             .with_for_update.return_value.one_or_none.return_value = trans
         with _mock_tillsession(mock_s), \
                 patch("emf.order_client._read_meta",
-                      return_value={"order_ref": "42", "location": LOCATION}), \
-                patch("emf.order_client._fallback_log_user", return_value=None):
+                      return_value={"order_ref": "42",
+                                    "location": LOCATION}), \
+                patch("emf.order_client._fallback_log_user",
+                      return_value=None):
             req = self.factory.delete(
                 "/api/kiosk/orders/42",
                 HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
@@ -389,8 +398,10 @@ class CancelViewTests(TestCase):
             .with_for_update.return_value.one_or_none.return_value = trans
         with _mock_tillsession(mock_s), \
                 patch("emf.order_client._read_meta",
-                      return_value={"order_ref": "42", "location": LOCATION}), \
-                patch("emf.order_client._fallback_log_user", return_value=None):
+                      return_value={"order_ref": "42",
+                                    "location": LOCATION}), \
+                patch("emf.order_client._fallback_log_user",
+                      return_value=None):
             req = self.factory.delete(
                 "/api/kiosk/orders/42",
                 HTTP_AUTHORIZATION=f"Bearer {TOKEN}",
@@ -428,3 +439,38 @@ class OrderDetailGetTests(TestCase):
             resp = order_detail(req, "9999")
         self.assertEqual(resp.status_code, 404)
         self.assertEqual(json.loads(resp.content)["error"], "not-found")
+
+
+# ---------------------------------------------------------------------------
+# mark_collected / mark_rejected
+# ---------------------------------------------------------------------------
+
+class MarkCollectedRejectedTests(TestCase):
+    def test_collected_missing_order_raises_not_found(self):
+        mock_s = MagicMock()
+        mock_s.get.return_value = None
+        with self.assertRaises(OrderNotFound) as cm:
+            mark_collected(mock_s, order_ref="42", location=LOCATION)
+        self.assertEqual(cm.exception.status_code, 404)
+
+    def test_collected_wrong_location_raises_not_found(self):
+        mock_s = MagicMock()
+        mock_s.get.return_value = MagicMock()
+        with patch("emf.order_client._read_meta",
+                   return_value={"location": "OtherBar"}):
+            with self.assertRaises(OrderNotFound):
+                mark_collected(mock_s, order_ref="42", location=LOCATION)
+
+    def test_rejected_missing_order_raises_not_found(self):
+        mock_s = MagicMock()
+        mock_s.get.return_value = None
+        with self.assertRaises(OrderNotFound):
+            mark_rejected(mock_s, order_ref="42", location=LOCATION)
+
+    def test_rejected_wrong_location_raises_not_found(self):
+        mock_s = MagicMock()
+        mock_s.get.return_value = MagicMock()
+        with patch("emf.order_client._read_meta",
+                   return_value={"location": "OtherBar"}):
+            with self.assertRaises(OrderNotFound):
+                mark_rejected(mock_s, order_ref="42", location=LOCATION)
