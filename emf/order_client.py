@@ -710,11 +710,6 @@ def orders(request):
     with tillsession() as s:
         try:
             user = _auth_user(s, auth.get("user"))
-            expired = expire_orders(
-                s,
-                location=location,
-                source=f"{auth['source']}-expiry",
-                user=user)
             result = place_order(
                 s,
                 location=location,
@@ -723,7 +718,6 @@ def orders(request):
                 user=user,
                 timeout=auth["timeout"],
                 max_items=auth.get("max_items"))
-            result["expired_orders"] = expired
             s.commit()
             if rate_limit_seconds:
                 cache.set(cache_key, True, rate_limit_seconds)
@@ -842,37 +836,6 @@ def _order_cancel(request, order_ref, auth):
         except sqlalchemy.exc.OperationalError as e:
             s.rollback()
             return _json_error(503, "database-error", str(e))
-
-
-@csrf_exempt
-def expire(request):
-    if request.method != "POST":
-        return _json_error(405, "method-not-allowed", "Use POST.")
-
-    payload = _request_json(request)
-    if payload is None:
-        return _json_error(400, "invalid-json", "Request body is not JSON.")
-
-    location = payload.get("location")
-    if not location:
-        return _json_error(400, "missing-location", "Location is required.")
-
-    auth, response = _authenticate(request)
-    if response:
-        return response
-
-    with tillsession() as s:
-        user = _auth_user(s, auth.get("user"))
-        expired = expire_orders(
-            s,
-            location=location,
-            source=f"{auth['source']}-expiry",
-            user=user)
-        s.commit()
-        return JsonResponse({
-            "location": location,
-            "expired_orders": expired,
-        })
 
 
 @csrf_exempt
