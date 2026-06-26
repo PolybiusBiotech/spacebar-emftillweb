@@ -183,11 +183,17 @@ def _parse_timestamp(value):
 
 
 def _read_meta(trans):
-    meta = trans.meta.get(order_meta_key)
-    if not meta:
+    """Return a transaction's decoded kiosk-order metadata, or None.
+
+    None means this is not a kiosk order (the transaction has no kiosk meta
+    key) or its stored metadata isn't valid JSON. Callers treat None as
+    "not a kiosk order" — e.g. a 404 on the order endpoints.
+    """
+    entry = trans.meta.get(order_meta_key)
+    if not entry:
         return None
     try:
-        return json.loads(meta.value)
+        return json.loads(entry.value)
     except json.JSONDecodeError:
         return None
 
@@ -327,7 +333,6 @@ def _order_response(trans, meta, *, created):
             "lines": lines,
         },
     }
-
 
 
 def _fallback_log_user(session, user):
@@ -628,7 +633,6 @@ def _check_token(request):
             401, "invalid-token",
             "Invalid bearer token in Authorization header")
     return None
-        
 
 
 def _authenticate(request):
@@ -733,24 +737,67 @@ def orders(request):
 
 
 @csrf_exempt
-def cancel(request):
-    if request.method != "POST":
-        return _json_error(405, "method-not-allowed", "Use POST.")
-
-    payload = _request_json(request)
-    if payload is None:
-        return _json_error(400, "invalid-json", "Request body is not JSON.")
-
-    barcode = payload.get("barcode", "")
-    order_ref = payload.get("order_ref", "")
+def order_detail(request, order_ref):
+    """Single-order resource: GET retrieves it, DELETE cancels it."""
+    if request.method not in ("GET", "DELETE"):
+        return _json_error(405, "method-not-allowed", "Use GET or DELETE.")
 
     auth, response = _authenticate(request)
     if response:
         return response
 
+    if request.method == "GET":
+        return _order_get_one(request, order_ref, auth)
+    return _order_cancel(request, order_ref, auth)
+
+
+def _order_get_one(request, order_ref, auth):
+    """Retrieve a single kiosk order by its reference.
+
+    Token auth only — reading an order is low-stakes, so unlike cancel this
+    does not require the receipt barcode.
+    """
+    try:
+        order_ref = int(order_ref)
+    except ValueError:
+        return _json_error(404, "not-found", "Order not found.")
+
+    with tillsession() as s:
+        try:
+            trans = s.query(Transaction)\
+                .filter(Transaction.id == order_ref)\
+                .options(joinedload(Transaction.meta))\
+                .one_or_none()
+
+            if not trans:
+                return _json_error(404, "not-found", "Order not found.")
+
+            meta = _read_meta(trans)
+            if not meta:
+                return _json_error(404, "not-found", "Order not found.")
+
+            return JsonResponse(_order_response(trans, meta, created=False))
+
+        except sqlalchemy.exc.OperationalError as e:
+            s.rollback()
+            return _json_error(503, "database-error", str(e))
+
+
+def _order_cancel(request, order_ref, auth):
+    """Cancel an unpaid kiosk order.
+
+    The URL identifies which order; the Order-Barcode header proves the caller
+    holds its receipt. The two must refer to the same order.
+    """
+    barcode = request.headers.get("Order-Barcode", "")
+
     trans_id = _verify_barcode(barcode)
     if trans_id is None:
         return _json_error(403, "bad-barcode", "Barcode checksum is invalid.")
+
+    if str(trans_id) != order_ref:
+        return _json_error(403, "bad-barcode",
+                           "Order reference does not match barcode.")
 
     with tillsession() as s:
         try:
@@ -770,10 +817,6 @@ def cancel(request):
             if not meta:
                 return _json_error(404, "not-found", "Order not found.")
 
-            if meta.get("order_ref") != order_ref:
-                return _json_error(403, "bad-barcode",
-                                   "Order reference does not match barcode.")
-
             if trans.closed or trans.payments:
                 return _json_error(409, "already-paid",
                                    "Order has already been paid and cannot be cancelled.")
@@ -788,7 +831,7 @@ def cancel(request):
                     source=auth["source"],
                     loguser=loguser,
                     description=(
-                        f"Badge cancelled kiosk order {trans.notes} "
+                        f"Cancelled kiosk order {trans.notes} "
                         f"(transaction {trans.id})")))
 
             s.delete(trans)

@@ -102,9 +102,10 @@ Orders recalled at the till are handled by the
 | Endpoint | Auth | Purpose |
 |---|---|---|
 | `GET /api/stocklines.json?location=<name>` | None | Product list and live stock levels |
-| `GET /api/kiosk/orders.json?location=<name>` | Bearer token | List live kiosk orders (OMS poll) |
-| `POST /api/kiosk/orders.json` | Bearer token | Place a new kiosk order — returns `{ order_ref, barcode }` |
-| `POST /api/kiosk/orders/cancel.json` | Bearer token + valid HMAC barcode | Cancel an unpaid order. Body: `{ order_ref, barcode }`. Verifies HMAC before deleting. 403 bad barcode, 404 not found, 409 paid/active. |
+| `GET /api/kiosk/orders?location=<name>` | Bearer token | List live kiosk orders (OMS poll) |
+| `POST /api/kiosk/orders` | Bearer token | Place a new kiosk order — returns `{ order_ref, barcode }` |
+| `GET /api/kiosk/orders/<ref>` | Bearer token | Retrieve a single order |
+| `DELETE /api/kiosk/orders/<ref>` | Bearer token + valid HMAC barcode | Cancel an unpaid order. Barcode is supplied in the `Order-Barcode` header and must match `<ref>`. Verifies HMAC before deleting. 403 bad barcode, 404 not found, 409 paid/active. |
 | `POST /api/kiosk/orders/expire.json` | Bearer token | Manually expire stale orders (operator escape hatch — normal expiry runs in the till plugin) |
 
 Order refs are the **quicktill Transaction ID** — no separate counter. Barcodes use HMAC-SHA1 check digits (`KIOSK:<trans_id><3-digit-decimal-check>`) to prevent forgery; both this server and `quicktill-spacebar-plugin` must share the same `kiosk.barcode_secret`.
