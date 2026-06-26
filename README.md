@@ -35,36 +35,22 @@ database_name = "emfcamp"
 currency_symbol = "£"
 site_name = "EMF Bars"
 
-[kiosk.tokens.my-dev-token]   # section key IS the bearer token — use random string in prod
-locations = ["Spacebar"]
-source = "spacebar-kiosk-1"  # human-readable label for audit logs
-user = "kiosk"
-```
-
-The optional `kiosk.tokens` section configures bearer tokens for the
-kiosk order API. Each token is scoped to one or more stockline locations.
-`user` is the quicktill user under whose name kiosk transactions are recorded.
-`locations` must exactly match the `KIOSK_LOCATION` env var on the kiosk and
-the location name assigned to stocklines in the database.
-
-Per-token limits (all optional):
-
-```toml
-[kiosk.tokens.my-badge-token]
-locations = ["Spacebar"]
-source = "badge"
-user = "kiosk"
-timeout    = 120   # order TTL in seconds (default: 900)
-max_items  = 1     # max quantity per order
-rate_limit = 300   # min seconds between orders from same IP
-```
-
-The shared barcode secret (used to generate and verify HMAC check digits on order barcodes):
-
-```toml
 [kiosk]
-barcode_secret = "<random-secret>"   # shared with quicktill-spacebar-plugin
+token = "<random-token>"             # bearer token the kiosk sends in the Authorization header
+user = "kiosk"                       # quicktill user that kiosk transactions are recorded under
+barcode_secret = "<random-secret>"   # shared with quicktill-spacebar-plugin; HMAC barcode check digits
 ```
+
+The `[kiosk]` section configures the kiosk order API:
+
+- `token` — the shared bearer token the kiosk sends in the
+  `Authorization: Bearer <token>` header. Use a long random string in production.
+- `user` — the quicktill user under whose name kiosk transactions are recorded.
+- `barcode_secret` — shared with the quicktill-spacebar-plugin, used to generate
+  and verify the HMAC check digits on order barcodes.
+
+The order `location` is supplied per request (it must match the location assigned
+to stocklines in the database); it is no longer configured here.
 
 
 Development
@@ -117,7 +103,7 @@ Orders recalled at the till are handled by the
 |---|---|---|
 | `GET /api/stocklines.json?location=<name>` | None | Product list and live stock levels |
 | `GET /api/kiosk/orders.json?location=<name>` | Bearer token | List live kiosk orders (OMS poll) |
-| `POST /api/kiosk/orders.json` | Bearer token | Place a new kiosk order — returns `{ order_ref, barcode, qr_rows }` |
+| `POST /api/kiosk/orders.json` | Bearer token | Place a new kiosk order — returns `{ order_ref, barcode }` |
 | `POST /api/kiosk/orders/cancel.json` | Bearer token + valid HMAC barcode | Cancel an unpaid order. Body: `{ order_ref, barcode }`. Verifies HMAC before deleting. 403 bad barcode, 404 not found, 409 paid/active. |
 | `POST /api/kiosk/orders/expire.json` | Bearer token | Manually expire stale orders (operator escape hatch — normal expiry runs in the till plugin) |
 

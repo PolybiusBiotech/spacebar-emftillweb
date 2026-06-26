@@ -5,8 +5,6 @@ import json
 from decimal import Decimal
 from hmac import compare_digest
 
-import qrcode
-
 import sqlalchemy
 from django.conf import settings
 from django.core.cache import cache
@@ -66,16 +64,6 @@ def _verify_barcode(barcode):
     if not compare_digest(check, _checkdigits(trans_id)):
         return None
     return trans_id
-
-
-def _qr_rows(data):
-    """Return QR code as list of '010...' strings, one per row."""
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M,
-                       box_size=1, border=1)
-    qr.add_data(data)
-    qr.make(fit=True)
-    matrix = qr.get_matrix()
-    return ["".join("1" if cell else "0" for cell in row) for row in matrix]
 
 
 def _is_soft(department):
@@ -321,7 +309,6 @@ def _order_response(trans, meta, *, created):
     return {
         "order_ref": order_ref,
         "barcode": barcode,
-        "qr_rows": _qr_rows(barcode),
         "location": meta["location"],
         "transaction_id": trans.id,
         "created": created,
@@ -587,7 +574,7 @@ def _json_error(status, code, message, **kwargs):
 
 
 def _token_config():
-    return getattr(settings, "EMF_KIOSK_ORDER_TOKENS", {})
+    return getattr(settings, "EMF_KIOSK_ORDER_TOKEN")
 
 
 def _bearer_token(request):
@@ -605,76 +592,55 @@ def _client_ip(request):
     return request.META.get("REMOTE_ADDR", "unknown")
 
 
-def _normalise_token_entry(entry):
-    if isinstance(entry, str):
-        return {
-            "locations": [entry],
-            "source": "kiosk",
-            "timeout": default_timeout,
-            "max_items": None,
-            "rate_limit_seconds": None,
-        }
-    locations = entry.get("locations", entry.get("location", []))
-    if isinstance(locations, str):
-        locations = [locations]
-    raw_timeout = entry.get("timeout")
-    timeout = (datetime.timedelta(seconds=int(raw_timeout))
-               if raw_timeout is not None else default_timeout)
-    raw_rate = entry.get("rate_limit")
-    rate_limit_seconds = int(raw_rate) if raw_rate is not None else None
-    raw_max = entry.get("max_items")
-    max_items = int(raw_max) if raw_max is not None else None
+def _service_user():
+    return getattr(settings, "EMF_KIOSK_USER", "")
+
+
+def _kiosk_identity():
+    """Return the identity of the kiosk service for logging and auditing."""
     return {
-        "locations": list(locations),
-        "source": entry.get("source", "kiosk"),
-        "user": entry.get("user"),
-        "timeout": timeout,
-        "max_items": max_items,
-        "rate_limit_seconds": rate_limit_seconds,
+        "source": "kiosk",
+        "user": _service_user(),
+        "timeout": default_timeout,
+        "max_items": None,
+        "rate_limit_seconds": None,
     }
 
 
-def _authenticate_token_only(request):
-    """Authenticate bearer token without location check (for cancel — barcode proves ownership)."""
+def _check_token(request):
+    """Validate the shared kiosk bearer token.
+
+    Returns an error JsonResponse if the token is missing or invalid, or
+    None when the request is authenticated.
+    """
     configured = _token_config()
     if not configured:
-        return None, _json_error(
+        return _json_error(
             503, "kiosk-api-not-configured",
-            "Kiosk API tokens have not been configured.")
-    supplied = _bearer_token(request)
-    if not supplied:
-        return None, _json_error(
+            "Kiosk API token has not been configured.")
+    token = _bearer_token(request)
+    if not token:
+        return _json_error(
             401, "missing-token",
-            "Supply a bearer token in the Authorization header.")
-    for token, entry in configured.items():
-        if compare_digest(str(token), supplied):
-            return _normalise_token_entry(entry), None
-    return None, _json_error(401, "invalid-token", "Bearer token not valid.")
+            "Missing bearer token in Authorization header.")
+    if not compare_digest(token, str(configured)):
+        return _json_error(
+            401, "invalid-token",
+            "Invalid bearer token in Authorization header")
+    return None
+        
 
 
-def _authenticate(request, location):
-    configured = _token_config()
-    if not configured:
-        return None, _json_error(
-            503, "kiosk-api-not-configured",
-            "Kiosk API tokens have not been configured.")
+def _authenticate(request):
+    """Authenticate a kiosk request via the shared bearer token.
 
-    supplied = _bearer_token(request)
-    if not supplied:
-        return None, _json_error(
-            401, "missing-token",
-            "Supply a bearer token in the Authorization header.")
-
-    for token, entry in configured.items():
-        if compare_digest(str(token), supplied):
-            auth = _normalise_token_entry(entry)
-            if location not in auth["locations"]:
-                return None, _json_error(
-                    403, "location-not-allowed",
-                    "This token is not allowed to access that location.")
-            return auth, None
-
-    return None, _json_error(401, "invalid-token", "Bearer token not valid.")
+    With a single, unscoped token there is no per-location gating, so every
+    endpoint shares this one check.
+    """
+    error = _check_token(request)
+    if error:
+        return None, error
+    return _kiosk_identity(), None
 
 
 def _request_json(request):
@@ -694,7 +660,7 @@ def _orders_get(request):
     location = request.GET.get("location")
     if not location:
         return _json_error(400, "missing-location", "Supply ?location=<name>.")
-    auth, response = _authenticate(request, location)
+    auth, response = _authenticate(request)
     if response:
         return response
     with tillsession() as s:
@@ -720,7 +686,7 @@ def orders(request):
     if not location:
         return _json_error(400, "missing-location", "Location is required.")
 
-    auth, response = _authenticate(request, location)
+    auth, response = _authenticate(request)
     if response:
         return response
 
@@ -778,7 +744,7 @@ def cancel(request):
     barcode = payload.get("barcode", "")
     order_ref = payload.get("order_ref", "")
 
-    auth, response = _authenticate_token_only(request)
+    auth, response = _authenticate(request)
     if response:
         return response
 
@@ -848,7 +814,7 @@ def expire(request):
     if not location:
         return _json_error(400, "missing-location", "Location is required.")
 
-    auth, response = _authenticate(request, location)
+    auth, response = _authenticate(request)
     if response:
         return response
 
@@ -871,13 +837,13 @@ def collect(request, order_ref):
     if request.method != "POST":
         return _json_error(405, "method-not-allowed", "Use POST.")
 
-    auth, response = _authenticate_token_only(request)
+    auth, response = _authenticate(request)
     if response:
         return response
 
-    location = auth.get("locations", [None])[0]
+    location = request.GET.get("location")
     if not location:
-        return _json_error(400, "missing-location", "Token has no location.")
+        return _json_error(400, "missing-location", "Supply ?location=<name>.")
 
     with tillsession() as s:
         try:
@@ -903,13 +869,13 @@ def reject(request, order_ref):
     if request.method != "POST":
         return _json_error(405, "method-not-allowed", "Use POST.")
 
-    auth, response = _authenticate_token_only(request)
+    auth, response = _authenticate(request)
     if response:
         return response
 
-    location = auth.get("locations", [None])[0]
+    location = request.GET.get("location")
     if not location:
-        return _json_error(400, "missing-location", "Token has no location.")
+        return _json_error(400, "missing-location", "Supply ?location=<name>.")
 
     with tillsession() as s:
         try:

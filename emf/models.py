@@ -153,5 +153,3 @@ class DisplayPage(models.Model):
             'content': self.render_content,
             'duration': self.display_time,
         }
-
-

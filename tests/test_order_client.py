@@ -14,13 +14,10 @@ from django.test import RequestFactory, TestCase, override_settings
 
 from emf.order_client import (
     _authenticate,
-    _authenticate_token_only,
     _bearer_token,
     _checkdigits,
     _client_ip,
-    _normalise_token_entry,
     _order_barcode,
-    _qr_rows,
     _verify_barcode,
     barcode_prefix,
     cancel,
@@ -33,14 +30,7 @@ from emf.order_client import (
 SECRET = "test-barcode-secret-xyz"
 TOKEN = "test-bearer-token-abc"
 LOCATION = "Spacebar"
-
-TOKENS = {
-    TOKEN: {
-        "locations": [LOCATION],
-        "source": "test-kiosk",
-        "user": "kiosk",
-    }
-}
+USER = "kiosk"
 
 
 # ---------------------------------------------------------------------------
@@ -121,46 +111,6 @@ class VerifyBarcodeTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# QR rows
-# ---------------------------------------------------------------------------
-
-class QrRowsTests(TestCase):
-    def setUp(self):
-        self.rows = _qr_rows("KIOSK:9574381")
-
-    def test_returns_list(self):
-        self.assertIsInstance(self.rows, list)
-        self.assertGreater(len(self.rows), 0)
-
-    def test_each_row_is_string(self):
-        for row in self.rows:
-            self.assertIsInstance(row, str)
-
-    def test_only_zero_and_one(self):
-        for row in self.rows:
-            for bit in row:
-                self.assertIn(bit, ("0", "1"), f"Unexpected char {bit!r} in row {row!r}")
-
-    def test_square_matrix(self):
-        n = len(self.rows)
-        for row in self.rows:
-            self.assertEqual(len(row), n)
-
-    def test_both_values_present(self):
-        # A valid QR code has both dark and light modules.
-        # This also confirms "0" is not truthy (regression: if bit: treats "0" as True).
-        all_bits = set("".join(self.rows))
-        self.assertIn("0", all_bits, "No light modules — QR would render as solid black")
-        self.assertIn("1", all_bits, "No dark modules — QR would render as solid white")
-
-    def test_zero_is_not_dark(self):
-        # The badge draws a rectangle only for bit == "1".
-        # Confirm that the string "0" is falsy when compared with == "1".
-        self.assertFalse("0" == "1")
-        self.assertTrue("1" == "1")
-
-
-# ---------------------------------------------------------------------------
 # Bearer token parsing
 # ---------------------------------------------------------------------------
 
@@ -215,55 +165,6 @@ class ClientIpTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Token normalisation
-# ---------------------------------------------------------------------------
-
-class NormaliseTokenEntryTests(TestCase):
-    def test_string_form(self):
-        result = _normalise_token_entry("Spacebar")
-        self.assertEqual(result["locations"], ["Spacebar"])
-        self.assertEqual(result["source"], "kiosk")
-        self.assertIsNone(result["max_items"])
-        self.assertIsNone(result["rate_limit_seconds"])
-        self.assertEqual(result["timeout"], default_timeout)
-
-    def test_dict_full(self):
-        entry = {
-            "locations": ["Spacebar", "Cybar"],
-            "source": "badge",
-            "user": "kiosk",
-            "timeout": 120,
-            "max_items": 1,
-            "rate_limit": 300,
-        }
-        result = _normalise_token_entry(entry)
-        self.assertEqual(result["locations"], ["Spacebar", "Cybar"])
-        self.assertEqual(result["source"], "badge")
-        self.assertEqual(result["user"], "kiosk")
-        self.assertEqual(result["timeout"], datetime.timedelta(seconds=120))
-        self.assertEqual(result["max_items"], 1)
-        self.assertEqual(result["rate_limit_seconds"], 300)
-
-    def test_dict_defaults(self):
-        result = _normalise_token_entry({})
-        self.assertEqual(result["locations"], [])
-        self.assertEqual(result["source"], "kiosk")
-        self.assertIsNone(result["user"])
-        self.assertIsNone(result["max_items"])
-        self.assertIsNone(result["rate_limit_seconds"])
-        self.assertEqual(result["timeout"], default_timeout)
-
-    def test_single_location_key(self):
-        result = _normalise_token_entry({"location": "Spacebar"})
-        self.assertEqual(result["locations"], ["Spacebar"])
-
-    def test_timeout_is_timedelta(self):
-        result = _normalise_token_entry({"timeout": 60})
-        self.assertIsInstance(result["timeout"], datetime.timedelta)
-        self.assertEqual(result["timeout"].total_seconds(), 60)
-
-
-# ---------------------------------------------------------------------------
 # _authenticate (location-scoped)
 # ---------------------------------------------------------------------------
 
@@ -271,87 +172,40 @@ class AuthenticateTests(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS={})
+    @override_settings(EMF_KIOSK_ORDER_TOKEN="")
     def test_no_tokens_configured(self):
         req = self.factory.get("/", HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        auth, resp = _authenticate(req, LOCATION)
+        auth, resp = _authenticate(req)
         self.assertIsNone(auth)
         self.assertEqual(resp.status_code, 503)
         data = json.loads(resp.content)
         self.assertEqual(data["error"], "kiosk-api-not-configured")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_missing_bearer(self):
         req = self.factory.get("/")
-        auth, resp = _authenticate(req, LOCATION)
+        auth, resp = _authenticate(req)
         self.assertIsNone(auth)
         self.assertEqual(resp.status_code, 401)
         data = json.loads(resp.content)
         self.assertEqual(data["error"], "missing-token")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_invalid_token(self):
         req = self.factory.get("/", HTTP_AUTHORIZATION="Bearer wrong-token")
-        auth, resp = _authenticate(req, LOCATION)
+        auth, resp = _authenticate(req)
         self.assertIsNone(auth)
         self.assertEqual(resp.status_code, 401)
         data = json.loads(resp.content)
         self.assertEqual(data["error"], "invalid-token")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
-    def test_wrong_location(self):
-        req = self.factory.get("/", HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        auth, resp = _authenticate(req, "OtherLocation")
-        self.assertIsNone(auth)
-        self.assertEqual(resp.status_code, 403)
-        data = json.loads(resp.content)
-        self.assertEqual(data["error"], "location-not-allowed")
-
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_valid(self):
         req = self.factory.get("/", HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        auth, resp = _authenticate(req, LOCATION)
+        auth, resp = _authenticate(req)
         self.assertIsNotNone(auth)
         self.assertIsNone(resp)
-        self.assertIn(LOCATION, auth["locations"])
-        self.assertEqual(auth["source"], "test-kiosk")
-
-
-# ---------------------------------------------------------------------------
-# _authenticate_token_only (no location check — used by cancel)
-# ---------------------------------------------------------------------------
-
-class AuthenticateTokenOnlyTests(TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-
-    @override_settings(EMF_KIOSK_ORDER_TOKENS={})
-    def test_no_tokens_configured(self):
-        req = self.factory.post("/", HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        auth, resp = _authenticate_token_only(req)
-        self.assertIsNone(auth)
-        self.assertEqual(resp.status_code, 503)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
-    def test_missing_bearer(self):
-        req = self.factory.post("/")
-        auth, resp = _authenticate_token_only(req)
-        self.assertIsNone(auth)
-        self.assertEqual(resp.status_code, 401)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
-    def test_invalid_token(self):
-        req = self.factory.post("/", HTTP_AUTHORIZATION="Bearer bad")
-        auth, resp = _authenticate_token_only(req)
-        self.assertIsNone(auth)
-        self.assertEqual(resp.status_code, 401)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
-    def test_valid(self):
-        req = self.factory.post("/", HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        auth, resp = _authenticate_token_only(req)
-        self.assertIsNotNone(auth)
-        self.assertIsNone(resp)
+        self.assertEqual(auth["source"], "kiosk")
 
 
 # ---------------------------------------------------------------------------
@@ -382,7 +236,7 @@ class OrdersViewTests(TestCase):
 
     # --- GET ---
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_missing_location(self):
         req = self.factory.get("/api/kiosk/orders.json",
                                HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
@@ -390,21 +244,13 @@ class OrdersViewTests(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json.loads(resp.content)["error"], "missing-location")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_no_auth(self):
         req = self.factory.get("/api/kiosk/orders.json", {"location": LOCATION})
         resp = orders(req)
         self.assertEqual(resp.status_code, 401)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
-    def test_get_wrong_location(self):
-        req = self.factory.get("/api/kiosk/orders.json",
-                               {"location": "OtherBar"},
-                               HTTP_AUTHORIZATION=f"Bearer {TOKEN}")
-        resp = orders(req)
-        self.assertEqual(resp.status_code, 403)
-
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_success(self):
         with _mock_tillsession():
             with patch("emf.order_client.list_orders", return_value=[]) as mock_list:
@@ -420,7 +266,7 @@ class OrdersViewTests(TestCase):
 
     # --- POST ---
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_invalid_json(self):
         req = self.factory.post("/api/kiosk/orders.json",
                                 data="not json",
@@ -430,7 +276,7 @@ class OrdersViewTests(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json.loads(resp.content)["error"], "invalid-json")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_missing_location(self):
         req = self.factory.post("/api/kiosk/orders.json",
                                 data=json.dumps({}),
@@ -440,7 +286,7 @@ class OrdersViewTests(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json.loads(resp.content)["error"], "missing-location")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_no_auth(self):
         req = self.factory.post("/api/kiosk/orders.json",
                                 data=json.dumps({"location": LOCATION}),
@@ -448,12 +294,11 @@ class OrdersViewTests(TestCase):
         resp = orders(req)
         self.assertEqual(resp.status_code, 401)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_post_success(self):
         fake_result = {
             "order_ref": "42",
             "barcode": "KIOSK:42999",
-            "qr_rows": ["010"],
             "location": LOCATION,
             "transaction_id": 42,
             "created": True,
@@ -497,7 +342,7 @@ class CancelViewTests(TestCase):
         resp = cancel(req)
         self.assertEqual(resp.status_code, 405)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_invalid_json(self):
         req = self.factory.post("/api/kiosk/orders/cancel.json",
                                 data="bad",
@@ -506,7 +351,7 @@ class CancelViewTests(TestCase):
         resp = cancel(req)
         self.assertEqual(resp.status_code, 400)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_no_auth(self):
         req = self.factory.post("/api/kiosk/orders/cancel.json",
                                 data=json.dumps({"barcode": "KIOSK:42123", "order_ref": "42"}),
@@ -514,7 +359,7 @@ class CancelViewTests(TestCase):
         resp = cancel(req)
         self.assertEqual(resp.status_code, 401)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     @override_settings(EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_bad_barcode(self):
         req = self.factory.post("/api/kiosk/orders/cancel.json",
@@ -525,7 +370,7 @@ class CancelViewTests(TestCase):
         self.assertEqual(resp.status_code, 403)
         self.assertEqual(json.loads(resp.content)["error"], "bad-barcode")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     @override_settings(EMF_KIOSK_BARCODE_SECRET=SECRET)
     def test_order_not_found(self):
         barcode = _order_barcode(9999)
@@ -555,7 +400,7 @@ class ExpireViewTests(TestCase):
         resp = expire(req)
         self.assertEqual(resp.status_code, 405)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_missing_location(self):
         req = self.factory.post("/api/kiosk/orders/expire.json",
                                 data=json.dumps({}),
@@ -565,7 +410,7 @@ class ExpireViewTests(TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(json.loads(resp.content)["error"], "missing-location")
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_no_auth(self):
         req = self.factory.post("/api/kiosk/orders/expire.json",
                                 data=json.dumps({"location": LOCATION}),
@@ -573,7 +418,7 @@ class ExpireViewTests(TestCase):
         resp = expire(req)
         self.assertEqual(resp.status_code, 401)
 
-    @override_settings(EMF_KIOSK_ORDER_TOKENS=TOKENS)
+    @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_success(self):
         with _mock_tillsession():
             with patch("emf.order_client.expire_orders", return_value=[]):
