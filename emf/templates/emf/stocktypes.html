@@ -19,8 +19,8 @@
             <th scope="col">ABV</th>
             <th scope="col">Department</th>
             <th scope="col" class="text-center">Logo present?</th>
-            <th scope="col" class="text-center">Notes present?</th>
-            <th scope="col">Tillweb link</th>
+            <th scope="col" class="text-center">Tasting notes present?</th>
+            <th scope="col"></th>
           </tr>
         </thead>
         <tbody>
@@ -31,7 +31,7 @@
             <td><a href="{{st.department.get_absolute_url}}">{{st.department.description}}</a></td>
             <td class="text-center">{% if "tillweb:product-logo" in st.meta %}✅{% endif %}</td>
             <td class="text-center">{% if "tillweb:tasting-notes" in st.meta %}✅{% endif %}</td>
-            <td><a href="{{st.get_absolute_url}}" class="btn btn-secondary">Link</a></td>
+            <td class="text-center"><a href="{{st.get_absolute_url}}" class="btn btn-secondary">Edit</a></td>
           </tr>
           {% endfor %}
         </tbody>
