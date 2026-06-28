@@ -8,16 +8,13 @@
 {% endblock %}
 
 {% block content %}
-<div class="alert-block warning"><strong>Note:</strong> Volunteers and card payments includes the cybar.</div>
+<div class="alert-block warning"><strong>Note:</strong> Volunteers and card payments includes the cybar and secret bar.</div>
 <ul>
   <li>Pints sold: {{pints_sold}} out of {{total_pints}} available (inc soft drink cartons etc.)</li>
   <li>Sold by {{volunteers}} volunteers</li>
   <li>{{card_payments}} card payments accepted</li>
   <li>{{cash_payments}} cash payments</li>
-  <li>{{card_roll_used}}m of card roll printed (not counting customer copies!)</li>
   <li>{{club_mate}} bottles of Club Mate sold out of 2400</li>
-  <li>We didnt have a flow meter on the Cold Tap™ this time but we will next time!</li>
-  <li>We used 195m of pipe to make all this work, across 13 individual pipes. A 7m length of the 13 pipe bundle was buried in the ground last Sunday, we have to dig it up again tomorrow!</li>
 </ul>
 
 {% endblock %}
