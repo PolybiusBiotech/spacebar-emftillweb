@@ -348,8 +348,6 @@ def jontyfacts(request):
             .filter(Payment.paytype_id == 'CARD')\
             .count()
 
-        card_roll_used = card_payments * 0.12
-
         cash_payments = s.query(Payment)\
             .filter(Payment.paytype_id == 'CASH')\
             .filter(Payment.amount > Decimal("0.00"))\
@@ -369,6 +367,27 @@ def jontyfacts(request):
                        "cash_payments": cash_payments,
                        "card_roll_used": card_roll_used,
                        "club_mate": club_mate,
+                       })
+
+
+@login_required
+def stocktypes(request):
+    from quicktill.models import StockType, StockTypeMeta
+    with tillsession() as s:
+        stocktypes = s.query(StockType)\
+                      .options(
+                          joinedload(StockType.meta),
+                          joinedload(StockType.department),
+                      )\
+                      .order_by(
+                          StockType.dept_id,
+                          StockType.manufacturer,
+                          StockType.name,
+                      )\
+                      .all()
+
+        return render(request, "emf/stocktypes.html",
+                      {"stocktypes": stocktypes,
                        })
 
 

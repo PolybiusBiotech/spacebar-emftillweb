@@ -26,7 +26,8 @@ urls = [
     path('barboard/', views.barboard, kwargs={'location': 'Bar'}),
     path('barboard/<location>/', views.barboard, name="barboard"),
 
-    path('jontyfacts/', views.jontyfacts, name="jontyfacts"),
+    path('misc/jontyfacts/', views.jontyfacts, name="jontyfacts"),
+    path('misc/stocktypes/', views.stocktypes, name="stocktypes"),
 
     path('tillprofile/', views.tillprofile, name="till-profile"),
 
