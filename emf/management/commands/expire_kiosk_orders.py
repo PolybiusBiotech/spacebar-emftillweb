@@ -4,7 +4,7 @@
 
 from django.core.management.base import BaseCommand
 
-from emf.order_client import expire_orders
+from emf.kiosk import expire_orders
 from emf.tilldb import tillsession
 
 

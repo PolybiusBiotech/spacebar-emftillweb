@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import RequestFactory, TestCase, override_settings
 
-from emf.order_client import (
+from emf.kiosk import (
     _authenticate,
     _bearer_token,
     _checkdigits,
@@ -199,7 +199,7 @@ def _mock_tillsession(return_value=None):
     def fake_tillsession():
         yield mock_session.__enter__.return_value
 
-    return patch("emf.order_client.tillsession", fake_tillsession)
+    return patch("emf.kiosk.tillsession", fake_tillsession)
 
 
 class OrdersViewTests(TestCase):
@@ -230,7 +230,7 @@ class OrdersViewTests(TestCase):
     @override_settings(EMF_KIOSK_ORDER_TOKEN=TOKEN)
     def test_get_success(self):
         with _mock_tillsession():
-            with patch("emf.order_client.list_orders",
+            with patch("emf.kiosk.list_orders",
                        return_value=[]) as mock_list:
                 req = self.factory.get("/api/kiosk/orders",
                                        {"location": LOCATION},
@@ -289,9 +289,9 @@ class OrdersViewTests(TestCase):
             "slip": {},
         }
         with _mock_tillsession():
-            with patch("emf.order_client.place_order",
+            with patch("emf.kiosk.place_order",
                        return_value=fake_result):
-                with patch("emf.order_client._auth_user", return_value=None):
+                with patch("emf.kiosk._auth_user", return_value=None):
                     req = self.factory.post(
                         "/api/kiosk/orders",
                         data=json.dumps({
@@ -373,10 +373,10 @@ class CancelViewTests(TestCase):
         mock_s.query.return_value.filter.return_value.options.return_value \
             .with_for_update.return_value.one_or_none.return_value = trans
         with _mock_tillsession(mock_s), \
-                patch("emf.order_client._read_meta",
+                patch("emf.kiosk._read_meta",
                       return_value={"order_ref": "42",
                                     "location": LOCATION}), \
-                patch("emf.order_client._fallback_log_user",
+                patch("emf.kiosk._fallback_log_user",
                       return_value=None):
             req = self.factory.delete(
                 "/api/kiosk/orders/42",
@@ -397,10 +397,10 @@ class CancelViewTests(TestCase):
         mock_s.query.return_value.filter.return_value.options.return_value \
             .with_for_update.return_value.one_or_none.return_value = trans
         with _mock_tillsession(mock_s), \
-                patch("emf.order_client._read_meta",
+                patch("emf.kiosk._read_meta",
                       return_value={"order_ref": "42",
                                     "location": LOCATION}), \
-                patch("emf.order_client._fallback_log_user",
+                patch("emf.kiosk._fallback_log_user",
                       return_value=None):
             req = self.factory.delete(
                 "/api/kiosk/orders/42",
@@ -456,7 +456,7 @@ class MarkCollectedRejectedTests(TestCase):
     def test_collected_wrong_location_raises_not_found(self):
         mock_s = MagicMock()
         mock_s.get.return_value = MagicMock()
-        with patch("emf.order_client._read_meta",
+        with patch("emf.kiosk._read_meta",
                    return_value={"location": "OtherBar"}):
             with self.assertRaises(OrderNotFound):
                 mark_collected(mock_s, order_ref="42", location=LOCATION)
@@ -470,7 +470,7 @@ class MarkCollectedRejectedTests(TestCase):
     def test_rejected_wrong_location_raises_not_found(self):
         mock_s = MagicMock()
         mock_s.get.return_value = MagicMock()
-        with patch("emf.order_client._read_meta",
+        with patch("emf.kiosk._read_meta",
                    return_value={"location": "OtherBar"}):
             with self.assertRaises(OrderNotFound):
                 mark_rejected(mock_s, order_ref="42", location=LOCATION)
