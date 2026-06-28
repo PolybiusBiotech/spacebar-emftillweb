@@ -20,7 +20,7 @@ import emf.models
 
 from .tilldb import tillsession, booziness, on_tap
 from quicktill.models import StockType, Unit, Department, \
-    Payment, LogEntry
+    Payment, LogEntry, StockItem, StockOut
 from quicktill.models import User as TillUser
 from quicktill.models import Group as TillGroup
 
@@ -324,7 +324,6 @@ def barboard(request, location):
 
 
 def jontyfacts(request):
-    from quicktill.models import StockItem, StockType, Unit, StockOut, User
     with tillsession() as s:
         pints_sold = s.query(func.sum(StockOut.qty)) \
             .select_from(StockOut)\
@@ -342,7 +341,7 @@ def jontyfacts(request):
             .filter(Unit.name == 'pint')\
             .scalar()
 
-        volunteers = s.query(User).count()
+        volunteers = s.query(TillUser).count()
 
         card_payments = s.query(Payment)\
             .filter(Payment.paytype_id == 'CARD')\
@@ -365,25 +364,19 @@ def jontyfacts(request):
                        "volunteers": volunteers - 1,  # remove 1 for "shop"
                        "card_payments": card_payments,
                        "cash_payments": cash_payments,
-                       "card_roll_used": card_roll_used,
                        "club_mate": club_mate,
                        })
 
 
 @login_required
 def stocktypes(request):
-    from quicktill.models import StockType, StockTypeMeta
     with tillsession() as s:
         stocktypes = s.query(StockType)\
-                      .options(
-                          joinedload(StockType.meta),
-                          joinedload(StockType.department),
-                      )\
-                      .order_by(
-                          StockType.dept_id,
-                          StockType.manufacturer,
-                          StockType.name,
-                      )\
+                      .options(joinedload(StockType.meta),
+                               joinedload(StockType.department))\
+                      .order_by(StockType.dept_id,
+                                StockType.manufacturer,
+                                StockType.name)\
                       .all()
 
         return render(request, "emf/stocktypes.html",
