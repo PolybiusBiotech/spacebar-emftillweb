@@ -28,6 +28,7 @@ front_page_config = config['front-page']
 till_config = config['till']
 oidc_config = config['oidc']
 xero_config = config['xero']
+kiosk_config = config.get('kiosk', {})
 
 # Simple switch to disable OIDC configuration without deleting it from
 # the configuration file
@@ -253,3 +254,7 @@ TILLWEB_PUBNAME = till_config.get("site_name", "site_name not configured")
 TILLWEB_LOGIN_REQUIRED = True
 TILLWEB_DEFAULT_ACCESS = "M"
 TILLWEB_MONEY_SYMBOL = till_config.get("currency_symbol", "")
+EMF_KIOSK_ORDER_TOKEN = kiosk_config.get("token", {})
+EMF_KIOSK_USER = kiosk_config.get("user", "")
+EMF_KIOSK_BARCODE_SECRET = kiosk_config.get("barcode_secret", "")
+EMF_KIOSK_CANCEL_MODE = kiosk_config.get("cancel_mode", "delete")
