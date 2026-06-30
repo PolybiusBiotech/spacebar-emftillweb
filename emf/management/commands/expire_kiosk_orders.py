@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         with tillsession() as s:
-            expired = expire_orders(s, location=None)
+            expired = expire_orders(s)
             s.commit()
 
         self.stdout.write(f"Expired {len(expired)} kiosk order(s).")

@@ -254,7 +254,14 @@ TILLWEB_PUBNAME = till_config.get("site_name", "site_name not configured")
 TILLWEB_LOGIN_REQUIRED = True
 TILLWEB_DEFAULT_ACCESS = "M"
 TILLWEB_MONEY_SYMBOL = till_config.get("currency_symbol", "")
-EMF_KIOSK_ORDER_TOKEN = kiosk_config.get("token", {})
-EMF_KIOSK_USER = kiosk_config.get("user", "")
+
+if scf := kiosk_config.get("token_file"):
+    with open(scf) as f:
+        EMF_KIOSK_ORDER_TOKEN = f.read().strip()
+else:
+    EMF_KIOSK_ORDER_TOKEN = ""
+EMF_KIOSK_USER = int(kiosk_config.get("till_user", 0))
 EMF_KIOSK_BARCODE_SECRET = kiosk_config.get("barcode_secret", "")
-EMF_KIOSK_CANCEL_MODE = kiosk_config.get("cancel_mode", "delete")
+EMF_KIOSK_LOCATION = kiosk_config.get("location", "SpaceBAR")
+EMF_KIOSK_SOURCE = kiosk_config.get("source", "kiosk")
+EMF_KIOSK_EXPIRY_SOURCE = kiosk_config.get("expiry_source", "kiosk-expiry")

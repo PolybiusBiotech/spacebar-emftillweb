@@ -48,10 +48,10 @@ urls = [
          name="api-stockline-set-note"),
 
     path('api/kiosk/orders/', kiosk.orders, name="api-kiosk-orders"),
-    path('api/kiosk/orders/<str:order_ref>/', kiosk.order_detail,
+    path('api/kiosk/orders/<int:transid>/', kiosk.order_detail,
          name="api-kiosk-order"),
-    path('api/kiosk/orders/<str:order_ref>/collect/', kiosk.collect,
-         name="api-kiosk-collect-order"),
-    path('api/kiosk/orders/<str:order_ref>/id-reject/', kiosk.reject,
-         name="api-kiosk-reject-order"),
+    path('api/kiosk/orders/<int:transid>/collect/', kiosk.update_order,
+         name="api-kiosk-collect-order", kwargs={'action': 'collect'}),
+    path('api/kiosk/orders/<int:transid>/id-reject/', kiosk.update_order,
+         name="api-kiosk-reject-order", kwargs={'action': 'id-reject'}),
 ]
