@@ -41,7 +41,6 @@
               });
 
               const rows = stocklines.map((x) => {
-                  console.log(x);
                   const template = document.createElement('template');
                   template.innerHTML = `<div class="tapcard"><div class="logo" id="slLogo${x.id}"></div><div id="slPrice${x.id}"></div></div>`;
                   const card = document.createElement('div');
