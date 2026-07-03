@@ -42,6 +42,8 @@ urls = [
     path('api/stocktype/<int:stocktype_id>.json', api.stocktype,
          name="api-stocktype"),
     path('api/locations.json', api.locations, name="api-locations"),
+    path('api/locations-display.json', api.locations_display,
+         name="api-locations-display"),
     path('api/stocklines.json', api.stocklines, name="api-stocklines"),
     path('api/stockline/<int:stockline_id>/set-note/', api.stockline_set_note,
          name="api-stockline-set-note"),

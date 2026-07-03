@@ -10,6 +10,7 @@ from django.http import HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 from .api_objects import department_to_dict, stocktype_to_dict, \
     stockitem_to_dict, stockline_to_dict
+from .api_objects import locations as display_locations
 
 
 # Partial queries
@@ -104,6 +105,15 @@ def locations(request):
     })
 
 
+def locations_display(request):
+    with tillsession() as s:
+        locations = StockLine.locations(s)
+
+    return JsonResponse({
+        'locations': {l: display_locations.get(l) for l in locations},
+    })
+
+
 def stocklines(request):
     brief = request.GET.get('output', 'brief') != 'full'
     with tillsession() as s:
@@ -129,6 +139,8 @@ def stocklines(request):
                 request.GET.getlist('location')))
         if 'startswith' in request.GET:
             q = q.filter(StockLine.name.ilike(request.GET['startswith'] + '%'))
+        if 'name' in request.GET:
+            q = q.filter(StockLine.name == request.GET['name'])
         stocklines = q.all()
 
         return JsonResponse({
