@@ -316,10 +316,9 @@ def cellarboard(request, location):
     })
 
 
-def barboard(request, location):
+def barboard(request):
     return render(request, "emf/barboard.html", context={
         "websocket_address": websocket_address(request),
-        "location": location,
     })
 
 

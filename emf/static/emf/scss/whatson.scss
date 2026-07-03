@@ -336,25 +336,6 @@ header {
 }
 
 
-
-.connection-status {
-    position: fixed;
-    color: $background;
-    background-color: $warning;
-    font-weight: bold;
-    border-radius: .25em;
-    padding: 1em;
-    bottom: 1em;
-    right: 1em;
-
-    display: none;
-
-    &.disconnected {
-        display: block;
-    }
-}
-
-
 @media screen and ( max-width: 76em ) {
     body {
         margin: 2em;

@@ -95,10 +95,8 @@
       <li><a href="https://github.com/sde1000/till-boot">The display boards</a> boot over the network and fetch various pages:
 	<ul>
 	  <li><a href="{% url "display" %}">Carousel</a></li>
-{% comment %}
-	  <li><a href="{% url "barboard" %}?line=Tap 1&line=Tap 2&line=Tap 3&line=Tap 4&line=Tap 5&line=Tap 6">Left-hand bank of keg taps</a></li>
-	  <li><a href="{% url "barboard" %}?line=Tap 1&line=Tap 2&line=Tap 3&line=Tap 4&line=Tap 5&line=Tap 6">Right-hand bank of keg taps</a></li>
-{% endcomment %}
+	  <li><a href="{% url "barboard" %}?line=Tap%20L&line=Tap%20C&line=Tap%201&line=Tap%202&line=Tap%203&line=Tap%204">Left-hand bank of keg taps</a></li>
+	  <li><a href="{% url "barboard" %}?line=Tap%20L&line=Tap%20C&line=Tap%205&line=Tap%206&line=Tap%207&line=Tap%208">Right-hand bank of keg taps</a></li>
 	  <li><a href="{% url "cellarboard" "Bar"%}">Bar cellar status</a></li>
 	  <li><a href="{% url "cellarboard" "Null Sector"%}">Null Sector cellar status</a></li>
 	</ul>

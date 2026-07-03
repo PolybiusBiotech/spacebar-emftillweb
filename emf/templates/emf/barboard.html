@@ -6,13 +6,72 @@
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="STYLESHEET" type="text/css" href="{% static "emf/css/barboard.css" %}">
+    <script src="{% static "emf/js/tillwebclient.js" %}"></script>
   </head>
   <body>
-    <script>
-      const websocket_address = "{{websocket_address}}";
-      const sl_location = "{{location}}";
-    </script>
-    <script src="{% static "emf/js/barboard.js" %}" defer></script>
     <div class="barboard-grid" id="barboard"></div>
+    <div id="connectionStatus" class="connection-status disconnected">Connection Lost</div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+          const barboard = document.getElementById("barboard");
+          const connectionStatus = document.getElementById("connectionStatus");
+
+          async function setup(params) {
+              const stocklines = [];
+              const location = params.get("location") ?? "Bar";
+              for (const linename of params.getAll("line")) {
+                  const response = await fetch(
+                      `/api/stocklines.json?type=regular&location=${location}&name=${linename}`);
+                  const sr = await response.json();
+                  stocklines.push(...sr.stocklines);
+              }
+
+              /* We only have 6 grid positions; the CSS breaks
+                 if we add further tapcards. */
+              if (stocklines.length > 6) {
+                  stocklines.length = 6;
+              }
+
+              const client = TillWebClient("{{websocket_address}}");
+              client.onConnect(function () {
+                  connectionStatus.classList.remove("disconnected");
+              });
+              client.onDisconnect(function () {
+                  connectionStatus.classList.add("disconnected");
+              });
+
+              const rows = stocklines.map((x) => {
+                  console.log(x);
+                  const template = document.createElement('template');
+                  template.innerHTML = `<div class="tapcard"><div class="logo" id="slLogo${x.id}"></div><div id="slPrice${x.id}"></div></div>`;
+                  const card = document.createElement('div');
+                  card.classList.add("tapcard");
+                  const logo = document.createElement('div');
+                  logo.classList.add("logo");
+                  card.appendChild(logo);
+                  const price = document.createElement('div');
+                  card.appendChild(price);
+                  client.onKey(x.key, function (m) {
+                      if (m.stockitem === null) {
+                          updateText(price, "");
+                      } else {
+                          if (m.stockitem.stocktype.logo === null) {
+                              updateText(logo, m.stockitem.stocktype.fullname.replace(
+                                  "% ABV", "% ABV"));
+                          } else {
+                              updateHTML(logo, `<img src="${m.stockitem.stocktype.logo}" alt="" />`);
+                          }
+                          updateText(price, `£${m.stockitem.stocktype.price}/${m.stockitem.stocktype.sale_unit_name}`);
+                      }
+                  });
+                  return card;
+              });
+              barboard.replaceChildren(...rows);
+          }
+
+          const params = new URL(document.location.toString()).searchParams;
+          setup(params);
+      });
+    </script>
   </body>
 </html>

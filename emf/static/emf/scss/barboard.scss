@@ -1,8 +1,8 @@
 @charset "UTF-8";
+@use 'colours' as *;
+@use 'fonts' as *;
+@use 'style';
 @import url( '../fonts/fonts.css' );
-
-$background: #afc944;
-$foreground: #213018;
 
 body {
     min-height: 100%;
@@ -23,7 +23,7 @@ body {
     align-content: center;
 }
 
-.barboard-grid div {
+.barboard-grid .tapcard {
     display: flex;
     flex-direction: column;
     flex-wrap: nowrap;
