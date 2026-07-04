@@ -53,6 +53,7 @@
                   card.appendChild(price);
                   client.onKey(x.key, function (m) {
                       if (m.stockitem === null) {
+                          updateHTML(logo, "");
                           updateText(price, "");
                       } else {
                           if (m.stockitem.stocktype.logo === null) {
