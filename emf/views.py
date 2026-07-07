@@ -373,6 +373,7 @@ def stocktypes(request):
         stocktypes = s.query(StockType)\
                       .options(joinedload(StockType.meta),
                                joinedload(StockType.department))\
+                      .filter(StockType.archived == False)\
                       .order_by(StockType.dept_id,
                                 StockType.manufacturer,
                                 StockType.name)\
