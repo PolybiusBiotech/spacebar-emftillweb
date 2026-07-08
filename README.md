@@ -5,7 +5,7 @@ Infrastructure needed to bring up an instance of `quicktill.tillweb`,
 plus the public-facing web pages for https://bar.emf.camp/.
 
 This is the EMF-specific fork of the project and contains assumptions
-about how the EMF till is configured. [The generic upstream version is here.](https://github.com/emfcamp/emftillweb)
+about how the EMF till is configured. [There is a separate repo for the generic version of the project here.](https://github.com/sde1000/tillweb)
 
 The infrastructure code in `tillweb/config` has been modified as
 little as possible. Most EMF-specific code is in `emf/`.
