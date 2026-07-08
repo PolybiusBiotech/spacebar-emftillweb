@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import func
 
 from decimal import Decimal
@@ -372,7 +372,8 @@ def stocktypes(request):
     with tillsession() as s:
         stocktypes = s.query(StockType)\
                       .options(joinedload(StockType.meta),
-                               joinedload(StockType.department))\
+                               joinedload(StockType.department),
+                               selectinload(StockType.items))\
                       .filter(StockType.archived == False)\
                       .order_by(StockType.dept_id,
                                 StockType.manufacturer,
