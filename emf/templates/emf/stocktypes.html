@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load django_bootstrap_breadcrumbs %}
+
+{% block breadcrumbs %}
+{{block.super}}
+{% breadcrumb "Stock types" "stocktypes" %}
+{% endblock %}
+
+{% block title %}All stocktypes{% endblock %}
+
+{% block content %}
+<main class="container">
+  <div class="row">
+    <div class="col">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Stock type</th>
+            <th scope="col">ABV</th>
+            <th scope="col">Department</th>
+            <th scope="col" class="text-center">Logo present?</th>
+            <th scope="col" class="text-center">Tasting notes present?</th>
+            <th scope="col" class="text-center">Stock present?</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for st in stocktypes %}
+          <tr class="align-middle">
+            <td><a href="{% url "product" st.id %}">{{st.fullname}}</a></td>
+            <td>{{st.abvstr}}</td>
+            <td><a href="{{st.department.get_absolute_url}}">{{st.department.description}}</a></td>
+            <td class="text-center">{% if "tillweb:product-logo" in st.meta %}✅{% endif %}</td>
+            <td class="text-center">{% if "tillweb:tasting-notes" in st.meta %}✅{% endif %}</td>
+            <td class="text-center">{% if st.items %}✅{% endif %}</td>
+            <td class="text-center"><a href="{{st.get_absolute_url}}" class="btn btn-secondary">Edit</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+{% endblock %}

@@ -111,7 +111,7 @@ class Command(BaseCommand):
             '--mqtt-retain', action='store_true', default=False,
             help="Set the MQTT Retain flag")
         parser.add_argument(
-            '--mqtt-topic-prefix', action='store', default='emf/bar/',
+            '--mqtt-topic-prefix', action='store', default='bar/',
             help="Prefix to add to keys to make MQTT topics")
 
     def handle(self, *args, **options):

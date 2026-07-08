@@ -111,7 +111,6 @@ table {
     }
 }
 
-
 .marker {
     background: #123f8b;
     height: inherit;
@@ -125,4 +124,25 @@ table {
     .remaining {
         background: #123f8b;
     }
+}
+
+.connection-status {
+    position: fixed;
+    color: $background;
+    background-color: $warning;
+    font-weight: bold;
+    border-radius: .25em;
+    padding: 1em;
+    bottom: 1em;
+    right: 1em;
+
+    display: none;
+
+    &.disconnected {
+        display: block;
+    }
+}
+
+.hide-cursor {
+    cursor: none !important;
 }

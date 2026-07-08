@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy import func
 
 from decimal import Decimal
@@ -20,7 +20,7 @@ import emf.models
 
 from .tilldb import tillsession, booziness, on_tap
 from quicktill.models import StockType, Unit, Department, \
-    Payment, LogEntry
+    Payment, LogEntry, StockItem, StockOut
 from quicktill.models import User as TillUser
 from quicktill.models import Group as TillGroup
 
@@ -316,15 +316,13 @@ def cellarboard(request, location):
     })
 
 
-def barboard(request, location):
+def barboard(request):
     return render(request, "emf/barboard.html", context={
         "websocket_address": websocket_address(request),
-        "location": location,
     })
 
 
 def jontyfacts(request):
-    from quicktill.models import StockItem, StockType, Unit, StockOut, User
     with tillsession() as s:
         pints_sold = s.query(func.sum(StockOut.qty)) \
             .select_from(StockOut)\
@@ -342,13 +340,11 @@ def jontyfacts(request):
             .filter(Unit.name == 'pint')\
             .scalar()
 
-        volunteers = s.query(User).count()
+        volunteers = s.query(TillUser).count()
 
         card_payments = s.query(Payment)\
             .filter(Payment.paytype_id == 'CARD')\
             .count()
-
-        card_roll_used = card_payments * 0.12
 
         cash_payments = s.query(Payment)\
             .filter(Payment.paytype_id == 'CASH')\
@@ -367,8 +363,25 @@ def jontyfacts(request):
                        "volunteers": volunteers - 1,  # remove 1 for "shop"
                        "card_payments": card_payments,
                        "cash_payments": cash_payments,
-                       "card_roll_used": card_roll_used,
                        "club_mate": club_mate,
+                       })
+
+
+@login_required
+def stocktypes(request):
+    with tillsession() as s:
+        stocktypes = s.query(StockType)\
+                      .options(joinedload(StockType.meta),
+                               joinedload(StockType.department),
+                               selectinload(StockType.items))\
+                      .filter(StockType.archived == False)\
+                      .order_by(StockType.dept_id,
+                                StockType.manufacturer,
+                                StockType.name)\
+                      .all()
+
+        return render(request, "emf/stocktypes.html",
+                      {"stocktypes": stocktypes,
                        })
 
 
@@ -440,8 +453,8 @@ def api_sessions(request):
         'sessions': [
             {
                 "type": "session",
-                "opening_time": s.opening_time,
-                "closing_time": s.closing_time,
+                "opening_time": timezone.localtime(s.opening_time),
+                "closing_time": timezone.localtime(s.closing_time),
             } for s in sessions],
     })
 

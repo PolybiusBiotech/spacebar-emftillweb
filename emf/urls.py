@@ -2,7 +2,7 @@ from django.urls import path
 from django.views.generic.base import RedirectView
 from emf import views
 from emf import api
-from emf import order_client
+from emf import kiosk
 
 urls = [
     path('', views.frontpage, name="frontpage"),
@@ -24,10 +24,10 @@ urls = [
     path('cellarboard/', views.cellarboard, kwargs={'location': 'Bar'}),
     path('cellarboard/<location>/', views.cellarboard, name="cellarboard"),
 
-    path('barboard/', views.barboard, kwargs={'location': 'Bar'}),
-    path('barboard/<location>/', views.barboard, name="barboard"),
+    path('barboard/', views.barboard, name="barboard"),
 
-    path('jontyfacts/', views.jontyfacts, name="jontyfacts"),
+    path('misc/jontyfacts/', views.jontyfacts, name="jontyfacts"),
+    path('misc/stocktypes/', views.stocktypes, name="stocktypes"),
 
     path('tillprofile/', views.tillprofile, name="till-profile"),
 
@@ -42,14 +42,17 @@ urls = [
     path('api/stocktype/<int:stocktype_id>.json', api.stocktype,
          name="api-stocktype"),
     path('api/locations.json', api.locations, name="api-locations"),
+    path('api/locations-display.json', api.locations_display,
+         name="api-locations-display"),
     path('api/stocklines.json', api.stocklines, name="api-stocklines"),
     path('api/stockline/<int:stockline_id>/set-note/', api.stockline_set_note,
          name="api-stockline-set-note"),
-    path('api/kiosk/orders', order_client.orders, name="api-kiosk-orders"),
-    path('api/kiosk/orders/<str:order_ref>', order_client.order_detail,
+
+    path('api/kiosk/orders/', kiosk.orders, name="api-kiosk-orders"),
+    path('api/kiosk/orders/<int:transid>/', kiosk.order_detail,
          name="api-kiosk-order"),
-    path('api/kiosk/orders/<str:order_ref>/collect', order_client.collect,
-         name="api-kiosk-collect-order"),
-    path('api/kiosk/orders/<str:order_ref>/id-reject', order_client.reject,
-         name="api-kiosk-reject-order"),
+    path('api/kiosk/orders/<int:transid>/collect/', kiosk.update_order,
+         name="api-kiosk-collect-order", kwargs={'action': 'collect'}),
+    path('api/kiosk/orders/<int:transid>/id-reject/', kiosk.update_order,
+         name="api-kiosk-reject-order", kwargs={'action': 'id-reject'}),
 ]
