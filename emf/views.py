@@ -453,8 +453,8 @@ def api_sessions(request):
         'sessions': [
             {
                 "type": "session",
-                "opening_time": s.opening_time,
-                "closing_time": s.closing_time,
+                "opening_time": timezone.localtime(s.opening_time),
+                "closing_time": timezone.localtime(s.closing_time),
             } for s in sessions],
     })
 
